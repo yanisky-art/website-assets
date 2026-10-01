@@ -20,7 +20,7 @@ html{color-scheme:dark}
 
 /* Embedded proportional scaling.
    The calculator keeps its desktop composition; the whole design scales as one unit. */
-html,body{overflow:auto}
+html,body{overflow:hidden}
 body{--design-width:1180px}
 .wrap{
   width:var(--design-width);
@@ -266,6 +266,8 @@ calc();
     const scale=Math.min(1,available/DESIGN_WIDTH);
     wrap.style.transform='scale('+scale+')';
     document.body.style.width=available+'px';
+    document.documentElement.style.overflow='hidden';
+    document.body.style.overflow='hidden';
     const scaledHeight=Math.ceil(wrap.scrollHeight*scale);
     document.body.style.height=scaledHeight+'px';
     document.documentElement.style.height=scaledHeight+'px';
