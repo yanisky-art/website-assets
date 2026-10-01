@@ -642,6 +642,48 @@
 
     }
 
+    /* ===================================== */
+    /* PAGE BUILDER                          */
+    /* ===================================== */
+    #page-builder-tool.active{display:block}
+    .builder-shell{display:grid;grid-template-columns:180px 210px minmax(360px,1fr) 230px;min-height:720px;border:1px solid #ddd;border-radius:14px;overflow:hidden;background:#fff}
+    .builder-panel{padding:16px;border-right:1px solid #ddd;min-width:0}
+    .builder-panel:last-child{border-right:0;border-left:1px solid #ddd}
+    .builder-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.5;margin:0 0 12px}
+    .builder-pages,.builder-blocks{display:flex;flex-direction:column;gap:7px}
+    .builder-page,.builder-block{appearance:none;width:100%;border:1px solid transparent;border-radius:8px;background:transparent;color:inherit;text-align:left;padding:9px 10px;font:inherit;font-size:13px;cursor:pointer}
+    .builder-page:hover,.builder-block:hover{background:#f5f5f5}.builder-page.active{background:#eee;font-weight:700}
+    .builder-block{border-color:#ddd;background:#fafafa}.builder-block small{display:block;opacity:.5;margin-top:3px}
+    .builder-main{min-width:0;background:#f5f5f5;display:flex;flex-direction:column}
+    .builder-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #ddd;background:#fff;flex-wrap:wrap}
+    .builder-toolbar-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .builder-mini{appearance:none;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;padding:7px 10px;font:inherit;font-size:12px;cursor:pointer}
+    .builder-mini.active{background:#222;color:#fff;border-color:#222}
+    .builder-canvas-wrap{padding:18px;overflow:auto;flex:1}
+    .builder-canvas{width:100%;max-width:980px;margin:auto;background:#fff;min-height:620px;border:1px solid #ddd;border-radius:10px;overflow:hidden;transition:max-width .2s ease}
+    .builder-canvas.tablet{max-width:720px}.builder-canvas.mobile{max-width:390px}
+    .builder-empty{padding:80px 24px;text-align:center;opacity:.45;font-size:14px}
+    .page-block{position:relative;padding:28px;border-bottom:1px solid #eee;cursor:pointer;transition:outline .1s ease}
+    .page-block.selected{outline:2px solid #6f8cff;outline-offset:-2px}.page-block.dragging{opacity:.35}
+    .page-block-tools{position:absolute;right:8px;top:8px;display:flex;gap:4px;opacity:0;transition:opacity .12s}.page-block:hover .page-block-tools,.page-block.selected .page-block-tools{opacity:1}
+    .block-tool{border:1px solid #ccc;background:#fff;color:#222;border-radius:6px;padding:4px 7px;cursor:pointer;font-size:11px}
+    .block-title{font-family:Georgia,serif;font-size:30px;margin:0 0 10px}.block-text{margin:0;line-height:1.6;opacity:.75}
+    .block-image-placeholder{min-height:220px;border-radius:8px;background:linear-gradient(135deg,#ece7e1,#d9d1c8);display:grid;place-items:center;color:#6d6259}
+    .block-button-demo{display:inline-block;margin-top:14px;padding:10px 16px;border-radius:999px;background:#222;color:#fff;font-weight:700;font-size:13px}
+    .block-divider{height:1px;background:#ddd}.block-spacer{height:90px}
+    .block-widget-frame{width:100%;height:420px;border:0;border-radius:10px;background:#191919}
+    .inspector-field{margin-bottom:14px}.inspector-field label{font-size:12px}.inspector-field textarea,.inspector-field select{width:100%;padding:9px;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;font:inherit}.inspector-field textarea{min-height:100px;resize:vertical}
+    .builder-note{font-size:12px;line-height:1.5;opacity:.55}.builder-danger{color:#b34a4a}
+    @media(prefers-color-scheme:dark){
+      .builder-shell,.builder-toolbar,.builder-canvas{background:#191919;border-color:#444}.builder-panel{border-color:#444}.builder-main{background:#111}
+      .builder-page:hover,.builder-block:hover{background:#242424}.builder-page.active{background:#302a2f}.builder-block{background:#202020;border-color:#444}
+      .builder-toolbar{border-color:#444}.builder-mini{border-color:#555}.builder-mini.active{background:#fff;color:#191919;border-color:#fff}
+      .page-block{border-color:#333}.block-tool{background:#242424;color:#fff;border-color:#555}.block-divider{background:#444}
+      .inspector-field textarea,.inspector-field select{border-color:#555}
+    }
+    @media(max-width:1100px){.builder-shell{grid-template-columns:150px 190px minmax(320px,1fr)}.builder-inspector{grid-column:1/-1;border-left:0!important;border-top:1px solid #ddd}.builder-shell{min-height:auto}}
+    @media(max-width:760px){.builder-shell{display:block}.builder-panel{border-right:0;border-bottom:1px solid #ddd}.builder-main{min-height:600px}}
+
   </style>
 </head>
 
@@ -676,6 +718,14 @@
       >
         Notebook Viewer
       </button>
+
+      <button
+        class="tab-button"
+        data-tab="page-builder-tool"
+      >
+        Page Builder
+      </button>
+
 
     </nav>
 
@@ -994,6 +1044,55 @@
 
       </div>
 
+    </section>
+
+
+    <!-- ================================= -->
+    <!-- PAGE BUILDER                      -->
+    <!-- ================================= -->
+    <section class="tab-content" id="page-builder-tool">
+      <div class="builder-shell">
+        <aside class="builder-panel">
+          <p class="builder-kicker">Страницы</p>
+          <div class="builder-pages" id="builder-pages"></div>
+          <button class="builder-page" id="builder-add-page" type="button">＋ New Page</button>
+        </aside>
+
+        <aside class="builder-panel">
+          <p class="builder-kicker">Добавить блок</p>
+          <div class="builder-blocks">
+            <button class="builder-block" data-builder-add="text" type="button">Текст<small>Заголовок и абзац</small></button>
+            <button class="builder-block" data-builder-add="image" type="button">Изображение<small>Фото или работа</small></button>
+            <button class="builder-block" data-builder-add="button" type="button">Кнопка<small>Ссылка или действие</small></button>
+            <button class="builder-block" data-builder-add="divider" type="button">Разделитель<small>Тонкая линия</small></button>
+            <button class="builder-block" data-builder-add="spacer" type="button">Пустое пространство<small>Вертикальный отступ</small></button>
+            <button class="builder-block" data-builder-add="price-calculator" type="button">Калькулятор стоимости<small>Готовый виджет</small></button>
+          </div>
+        </aside>
+
+        <section class="builder-main">
+          <div class="builder-toolbar">
+            <div class="builder-toolbar-group">
+              <strong id="builder-current-page">HOME</strong>
+              <span class="builder-note">yanisky.art/</span>
+            </div>
+            <div class="builder-toolbar-group">
+              <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
+              <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
+              <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
+              <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
+            </div>
+          </div>
+          <div class="builder-canvas-wrap">
+            <div class="builder-canvas" id="builder-canvas"></div>
+          </div>
+        </section>
+
+        <aside class="builder-panel builder-inspector">
+          <p class="builder-kicker">Настройки блока</p>
+          <div id="builder-inspector"><p class="builder-note">Выбери блок на странице, чтобы изменить его.</p></div>
+        </aside>
+      </div>
     </section>
 
 
@@ -2759,6 +2858,113 @@
       }
 
     }
+
+
+    /* ===================================== */
+    /* PAGE BUILDER                          */
+    /* ===================================== */
+    const PAGE_BUILDER_KEY = "yaniskyPageBuilderDraft";
+    const builderDefault = {
+      currentPage: "home",
+      pages: [
+        {id:"home",name:"HOME",blocks:[
+          {id:"b1",type:"text",title:"YANISKY",text:"Artworks that hold quiet feelings. Small stories in bright colors."},
+          {id:"b2",type:"price-calculator",title:"Калькулятор стоимости",text:""}
+        ]},
+        {id:"about",name:"ABOUT",blocks:[]},
+        {id:"traditional",name:"TRADITIONAL",blocks:[]},
+        {id:"digital",name:"DIGITAL",blocks:[]},
+        {id:"mixed-media",name:"MIXED MEDIA",blocks:[]},
+        {id:"projects",name:"PROJECTS",blocks:[]},
+        {id:"events",name:"EVENTS",blocks:[]},
+        {id:"contact",name:"CONTACT",blocks:[]}
+      ]
+    };
+    let builderState;
+    let builderSelected = null;
+
+    function builderLoad(){
+      try{builderState=JSON.parse(localStorage.getItem(PAGE_BUILDER_KEY))||structuredClone(builderDefault)}
+      catch(e){builderState=structuredClone(builderDefault)}
+      if(!builderState.pages?.length) builderState=structuredClone(builderDefault);
+    }
+    function builderPage(){return builderState.pages.find(p=>p.id===builderState.currentPage)||builderState.pages[0]}
+    function builderPersist(){localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState))}
+    function builderEsc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+    function builderUid(){return "b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+    function builderRenderPages(){
+      const host=document.getElementById("builder-pages"); if(!host)return;
+      host.innerHTML="";
+      builderState.pages.forEach(p=>{
+        const b=document.createElement("button"); b.type="button"; b.className="builder-page"+(p.id===builderState.currentPage?" active":""); b.textContent=p.name;
+        b.onclick=()=>{builderState.currentPage=p.id;builderSelected=null;builderRender()};
+        host.appendChild(b);
+      });
+      document.getElementById("builder-current-page").textContent=builderPage().name;
+    }
+
+    function builderBlockMarkup(b){
+      if(b.type==="text")return '<h3 class="block-title">'+builderEsc(b.title||"Заголовок")+'</h3><p class="block-text">'+builderEsc(b.text||"Текст блока")+'</p>';
+      if(b.type==="image")return '<div class="block-image-placeholder">'+builderEsc(b.title||"Изображение")+'</div>';
+      if(b.type==="button")return '<h3 class="block-title">'+builderEsc(b.title||"Кнопка")+'</h3><span class="block-button-demo">'+builderEsc(b.text||"Открыть")+'</span>';
+      if(b.type==="divider")return '<div class="block-divider"></div>';
+      if(b.type==="spacer")return '<div class="block-spacer"></div>';
+      if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости"></iframe>';
+      return '<p class="block-text">Блок</p>';
+    }
+
+    function builderRenderCanvas(){
+      const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
+      const page=builderPage(); canvas.innerHTML="";
+      if(!page.blocks.length){canvas.innerHTML='<div class="builder-empty">Страница пока пустая.<br>Добавь первый блок слева.</div>';return}
+      page.blocks.forEach((b,i)=>{
+        const el=document.createElement("div"); el.className="page-block"+(builderSelected===b.id?" selected":""); el.draggable=true; el.dataset.id=b.id;
+        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+b.id+'" type="button">×</button></div>'+builderBlockMarkup(b);
+        el.onclick=e=>{if(e.target.closest(".page-block-tools"))return;builderSelected=b.id;builderRenderCanvas();builderRenderInspector()};
+        el.ondragstart=e=>{el.classList.add("dragging");e.dataTransfer.setData("text/plain",b.id)};
+        el.ondragend=()=>el.classList.remove("dragging");
+        el.ondragover=e=>e.preventDefault();
+        el.ondrop=e=>{e.preventDefault();const from=e.dataTransfer.getData("text/plain"),to=b.id;if(from===to)return;const a=page.blocks.findIndex(x=>x.id===from),z=page.blocks.findIndex(x=>x.id===to);const [m]=page.blocks.splice(a,1);page.blocks.splice(z,0,m);builderRenderCanvas()};
+        canvas.appendChild(el);
+      });
+      canvas.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>{page.blocks=page.blocks.filter(b=>b.id!==x.dataset.delete);if(builderSelected===x.dataset.delete)builderSelected=null;builderRenderCanvas();builderRenderInspector()});
+      canvas.querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>{const i=+x.dataset.up;if(i>0){[page.blocks[i-1],page.blocks[i]]=[page.blocks[i],page.blocks[i-1]];builderRenderCanvas()}});
+      canvas.querySelectorAll("[data-down]").forEach(x=>x.onclick=()=>{const i=+x.dataset.down;if(i<page.blocks.length-1){[page.blocks[i+1],page.blocks[i]]=[page.blocks[i],page.blocks[i+1]];builderRenderCanvas()}});
+    }
+
+    function builderRenderInspector(){
+      const host=document.getElementById("builder-inspector"); if(!host)return;
+      const b=builderPage().blocks.find(x=>x.id===builderSelected);
+      if(!b){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
+      if(["divider","spacer","price-calculator"].includes(b.type)){
+        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
+      }
+      host.innerHTML='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(b.title||"")+'</textarea></div><div class="inspector-field"><label>'+(b.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(b.text||"")+'</textarea></div>';
+      const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
+      t.oninput=()=>{b.title=t.value;builderRenderCanvas()}; x.oninput=()=>{b.text=x.value;builderRenderCanvas()};
+    }
+
+    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderInspector()}
+    builderLoad();
+
+    document.querySelectorAll("[data-builder-add]").forEach(btn=>btn.addEventListener("click",()=>{
+      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:""};
+      if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
+      if(type==="image")b.title="Изображение";
+      if(type==="button"){b.title="Кнопка";b.text="Открыть"}
+      builderPage().blocks.push(b);builderSelected=b.id;builderRender();
+    }));
+    document.querySelectorAll("[data-builder-device]").forEach(btn=>btn.addEventListener("click",()=>{
+      document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
+      const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
+    }));
+    document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
+    document.getElementById("builder-add-page")?.addEventListener("click",()=>{
+      const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
+      builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[]});builderState.currentPage=id;builderSelected=null;builderRender();
+    });
+    builderRender();
 
 
     /* ===================================== */
