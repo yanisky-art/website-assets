@@ -685,6 +685,7 @@
     @media(max-width:760px){.builder-shell{display:block}.builder-panel{border-right:0;border-bottom:1px solid #ddd}.builder-main{min-height:600px}}
 
     /* PAGE BUILDER V2 - full workspace */
+    .builder-menu-frame{height:72px;border-radius:0;background:#191919}
     body.builder-mode{padding:0;overflow:hidden}
     body.builder-mode>.container{max-width:none;width:100%;height:100vh;margin:0}
     body.builder-mode>.container>h1,
@@ -1105,6 +1106,7 @@
             <button class="builder-block" data-builder-add="text" type="button">Текст<small>Заголовок и абзац</small></button>
             <button class="builder-block" data-builder-add="image" type="button">Изображение<small>Фото или работа</small></button>
             <button class="builder-block" data-builder-add="button" type="button">Кнопка<small>Ссылка или действие</small></button>
+            <button class="builder-block" data-builder-add="site-menu" type="button">Переключение страниц<small>Глобальное меню сайта</small></button>
             <button class="builder-block" data-builder-add="divider" type="button">Разделитель<small>Тонкая линия</small></button>
             <button class="builder-block" data-builder-add="spacer" type="button">Пустое пространство<small>Вертикальный отступ</small></button>
 
@@ -2957,6 +2959,7 @@
       if(b.type==="text")return '<h3 class="block-title">'+builderEsc(b.title||"Заголовок")+'</h3><p class="block-text">'+builderEsc(b.text||"Текст блока")+'</p>';
       if(b.type==="image")return '<div class="block-image-placeholder">'+builderEsc(b.title||"Изображение")+'</div>';
       if(b.type==="button")return '<h3 class="block-title">'+builderEsc(b.title||"Кнопка")+'</h3><span class="block-button-demo">'+builderEsc(b.text||"Открыть")+'</span>';
+      if(b.type==="site-menu")return '<iframe class="block-widget-frame builder-menu-frame" src="./menu/" title="Меню сайта"></iframe>';
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости"></iframe>';
@@ -2987,8 +2990,8 @@
       const host=document.getElementById("builder-inspector"); if(!host)return;
       const b=builderPage().blocks.find(x=>x.id===builderSelected);
       if(!b){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
-      if(["divider","spacer","price-calculator","saved-widget"].includes(b.type)){
-        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="saved-widget"?(b.title||"Сохранённый виджет"):b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
+      if(["divider","spacer","price-calculator","saved-widget","site-menu"].includes(b.type)){
+        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="saved-widget"?(b.title||"Сохранённый виджет"):b.type==="site-menu"?"Переключение страниц":b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
       }
       host.innerHTML='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(b.title||"")+'</textarea></div><div class="inspector-field"><label>'+(b.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(b.text||"")+'</textarea></div>';
       const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
