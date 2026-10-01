@@ -1185,7 +1185,7 @@
               <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
               <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
-              <button class="builder-mini" id="builder-preview" type="button">Предпросмотр ↗</button>\n              <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
+              <a class="builder-mini" id="builder-preview" href="?preview=1&page=home" target="_blank" rel="noopener" style="text-decoration:none">Предпросмотр ↗</a>\n              <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
             </div>
           </div>
           <div class="builder-canvas-wrap">
@@ -3013,6 +3013,8 @@
         host.appendChild(b);
       });
       document.getElementById("builder-current-page").textContent=builderPage().name;
+      const previewLink=document.getElementById("builder-preview");
+      if(previewLink){const u=new URL(window.location.href);u.search="";u.searchParams.set("preview","1");u.searchParams.set("page",builderPage().id);previewLink.href=u.toString()}
     }
 
     function builderBlockMarkup(b){
@@ -3225,7 +3227,8 @@
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
     }));
-    document.getElementById("builder-preview")?.addEventListener("click",()=>{builderPersist();const u=new URL(window.location.href);u.searchParams.delete("editor");u.searchParams.set("preview","1");u.searchParams.set("page",builderPage().id);window.open(u.toString(),"_blank","noopener")});\n    document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
+    document.getElementById("builder-preview")?.addEventListener("click",()=>{builderPersist();const u=new URL(window.location.href);u.searchParams.delete("editor");u.searchParams.set("preview","1");u.searchParams.set("page",builderPage().id);window.open(u.toString(),"_blank","noopener")});\n    document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
+    document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
     document.getElementById("builder-add-page")?.addEventListener("click",()=>{
       const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
       builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[]});builderState.currentPage=id;builderSelected=null;builderRender();
