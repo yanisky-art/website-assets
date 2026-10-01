@@ -18,62 +18,16 @@ html{color-scheme:dark}
 .countryOptions::-webkit-scrollbar-button{background:#191919}
 }.countryOption{display:block;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;text-align:left;padding:9px 10px;border-radius:7px;cursor:pointer}.countryOption:hover,.countryOption:focus{background:var(--soft);outline:none}.countryEmpty{padding:9px 10px;color:var(--muted);font-size:13px}textarea{min-height:92px;resize:vertical}.rangeRow{display:grid;grid-template-columns:1fr 70px;gap:12px;align-items:center}input[type=range]{width:100%;accent-color:var(--accent)}.choices{display:flex;flex-wrap:wrap;gap:10px}.choice{border:0;border-radius:0;padding:4px 0;font-size:14px;cursor:pointer;user-select:none}.choice input{margin-right:7px}.dimensionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.dimensionHead label{margin:0}.dimensionInput{width:88px!important;padding:8px 10px!important;text-align:right;-moz-appearance:textfield}.dimensionInput::-webkit-outer-spin-button,.dimensionInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.dimensionUnit{font-size:12px;color:var(--muted);margin-left:5px}.hidden{display:none!important}.summary{position:sticky;top:18px;background:var(--soft);border:1px solid var(--line);border-radius:22px;padding:24px;min-height:240px}.totalBox{display:flex;flex-direction:column;align-items:stretch;gap:22px}.totalLabel{font-size:13px;color:var(--muted);letter-spacing:.02em}.total{font-size:clamp(30px,4vw,46px);font-weight:750;letter-spacing:-.04em;margin-top:5px}.summaryTitle{font-size:14px;font-weight:700;margin-bottom:6px}.summaryHint{font-size:12px;color:var(--muted);line-height:1.5}.summary .button{width:100%;border-radius:10px}.summaryEmpty{font-size:14px;color:var(--muted);line-height:1.5}.button{border:0;border-radius:999px;background:var(--fg);color:var(--bg);font:inherit;font-weight:700;padding:13px 19px;cursor:pointer}.button:disabled{opacity:.35;cursor:not-allowed}.pack{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px}.packIcon{font-size:25px}.legal{font-size:12px;color:var(--muted);line-height:1.55}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}.modalBox{width:min(480px,100%);background:var(--bg);border-radius:16px;padding:22px}.modalHead{display:flex;justify-content:space-between;gap:12px;align-items:start}.x{background:none;border:0;color:var(--fg);font-size:24px;cursor:pointer}.briefField{margin-top:16px}.briefField textarea{min-height:130px}.referenceUpload{margin:16px 0}.uploadRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.attachButton{width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;line-height:1}.attachButton:hover{background:var(--soft)}.attachButton:focus-visible{outline:2px solid var(--fg);outline-offset:2px}.fileHint{font-size:12px;color:var(--muted)}.fileList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.fileChip{min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px;background:var(--soft);display:flex;align-items:center;gap:8px}.fileIcon{font-size:19px;flex:0 0 auto}.fileName{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.fileRemove{margin-left:auto;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:17px;padding:0 2px;flex:0 0 auto}.uploadError{font-size:12px;color:var(--muted);margin-top:7px}.success{padding:14px;border-radius:10px;background:var(--soft);line-height:1.5}.future{padding:12px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:13px}.inline{display:flex;gap:10px;align-items:center}.inline select{width:auto}@media(min-width:801px){#traditional>.grid,#digital>.grid,#mixed>.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px}#traditional>.grid>.full,#digital>.grid>.full,#mixed>.grid>.full{grid-column:auto}#tradStepSize,#digStepSize{grid-column:1/-1!important}#materials,#tradStepDetail,#tradStepShipping{grid-column:auto}#mixedFields{grid-column:1/-1!important;grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:800px){.calculatorLayout{grid-template-columns:1fr;gap:22px}.formPane{display:block}.summary{position:relative;top:auto;order:-1}.grid{grid-template-columns:1fr}.full{grid-column:auto}.button{width:100%}.fileList{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* Embedded widget responsiveness: reacts to its own block width, not viewport */\n/* Fluid scale for the calculator itself, including the result card */
-body{--fluid:clamp(.68,calc(.42 + 0.00058 * 100cqw),1)}
-.wrap{font-size:clamp(11px,1.35cqw,16px)}
-.summary{padding:clamp(12px,2.2cqw,24px);border-radius:clamp(12px,2.1cqw,22px);min-height:clamp(180px,28cqw,240px)}
-.totalBox{gap:clamp(12px,2cqw,22px)}
-.totalLabel{font-size:clamp(10px,1.25cqw,13px)}
-.total{font-size:clamp(25px,4.1cqw,46px)}
-.legal{font-size:clamp(9px,1.12cqw,12px);line-height:1.55}
-.summary .button{font-size:clamp(10px,1.2cqw,14px);padding:clamp(9px,1.3cqw,13px) clamp(12px,1.8cqw,19px)}
-
-body{container-type:inline-size;container-name:pricecalc}\n.wrap{width:100%}
-@container pricecalc (max-width:1050px){
-  .wrap{padding:clamp(16px,2.2cqw,22px) clamp(12px,2cqw,18px) 28px}
-  .calculatorLayout{grid-template-columns:minmax(0,1.35fr) minmax(280px,.8fr);gap:clamp(14px,2.2cqw,24px)}
-  .formPane{gap:0 clamp(14px,2cqw,24px)}
-  .summary{padding:clamp(16px,2.2cqw,22px);border-radius:clamp(14px,2cqw,22px)}
-  h1{font-size:clamp(27px,4.2cqw,40px)}
-}
-@container pricecalc (max-width:760px){
-  .calculatorLayout{grid-template-columns:1fr;gap:16px}
-  .formPane{display:block}
-  .summary{position:relative;top:auto;order:2;min-height:0}
-  .grid{grid-template-columns:1fr}
-  .full{grid-column:auto}
-  #traditional>.grid,#digital>.grid,#mixed>.grid{grid-template-columns:1fr}
-  #traditional>.grid>.full,#digital>.grid>.full,#mixed>.grid>.full,#tradStepSize,#digStepSize,#mixedFields{grid-column:auto!important}
-  #mixedFields{grid-template-columns:1fr!important}
-  .button{width:100%}
-}
-@container pricecalc (max-width:520px){
-  .wrap{padding:14px 10px 22px}
-  .calculatorLayout{gap:10px}
-  .summary{margin-top:4px}
-  .legal{font-size:11px}
-  h1{font-size:clamp(23px,7cqw,31px);line-height:1.05}
-  h2{font-size:16px;margin-bottom:13px}
-  .notice,.hint{font-size:12px}
-  .card{padding:14px 0}
-  .summary{padding:14px;border-radius:14px}
-  .totalBox{gap:14px}
-  .total{font-size:clamp(28px,10cqw,38px)}
-  select,input[type=text],input[type=email],input[type=number],textarea,.countryButton{padding:10px;border-radius:8px}
-  label,.label{font-size:13px}
-  .choices{gap:7px 10px}
-  .rangeRow{grid-template-columns:1fr 62px;gap:8px}
-  .dimensionHead{gap:7px}
-  .dimensionInput{width:72px!important}
-  .fileList{grid-template-columns:1fr}
-}
-@container pricecalc (max-width:360px){
-  .wrap{padding-inline:8px}
-  h1{font-size:22px}
-  .summary{padding:12px}
-  .dimensionHead{align-items:flex-start;flex-direction:column}
-  .dimensionInput{width:100%!important;text-align:left}
-  .inline{align-items:stretch;flex-direction:column}
+/* Embedded proportional scaling.
+   The calculator keeps its desktop composition; the whole design scales as one unit. */
+html,body{overflow:auto}
+body{--design-width:1180px}
+.wrap{
+  width:var(--design-width);
+  max-width:none;
+  margin:0;
+  padding:22px 18px 36px;
+  transform-origin:top left;
 }
 </style>
 </head>
@@ -301,6 +255,26 @@ $('#contactForm').addEventListener('submit',e=>{e.preventDefault();$('#contactFo
 // Best-effort live FX. If unavailable, fallback rates above keep the widget functional.
 fetch('https://open.er-api.com/v6/latest/RUB').then(r=>r.json()).then(d=>{if(d&&d.rates){state.rates.USD=d.rates.USD;state.rates.EUR=d.rates.EUR;calc()}}).catch(()=>{});
 calc();
+</script>
+<script>
+(function(){
+  const DESIGN_WIDTH=1180;
+  const wrap=document.querySelector('.wrap');
+  if(!wrap)return;
+  function scaleCalculator(){
+    const available=Math.max(220,document.documentElement.clientWidth);
+    const scale=Math.min(1,available/DESIGN_WIDTH);
+    wrap.style.transform='scale('+scale+')';
+    document.body.style.width=available+'px';
+    const scaledHeight=Math.ceil(wrap.scrollHeight*scale);
+    document.body.style.height=scaledHeight+'px';
+    document.documentElement.style.height=scaledHeight+'px';
+    try{parent.postMessage({type:'yanisky-widget-size',height:scaledHeight},'*')}catch(e){}
+  }
+  new ResizeObserver(scaleCalculator).observe(document.documentElement);
+  window.addEventListener('load',scaleCalculator);
+  scaleCalculator();
+})();
 </script>
 </body>
 </html>
