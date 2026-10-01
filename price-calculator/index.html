@@ -30,7 +30,7 @@ html{color-scheme:dark}
 @container pricecalc (max-width:760px){
   .calculatorLayout{grid-template-columns:1fr;gap:16px}
   .formPane{display:block}
-  .summary{position:relative;top:auto;order:-1;min-height:0}
+  .summary{position:relative;top:auto;order:2;min-height:0}
   .grid{grid-template-columns:1fr}
   .full{grid-column:auto}
   #traditional>.grid,#digital>.grid,#mixed>.grid{grid-template-columns:1fr}
@@ -40,6 +40,9 @@ html{color-scheme:dark}
 }
 @container pricecalc (max-width:520px){
   .wrap{padding:14px 10px 22px}
+  .calculatorLayout{gap:10px}
+  .summary{margin-top:4px}
+  .legal{font-size:11px}
   h1{font-size:clamp(23px,7cqw,31px);line-height:1.05}
   h2{font-size:16px;margin-bottom:13px}
   .notice,.hint{font-size:12px}
