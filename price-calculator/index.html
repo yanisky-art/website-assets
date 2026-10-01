@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Нарисую вам желаемое</title>
+<style>
+:root{--bg:#fff;--fg:#202020;--muted:#6d6d6d;--line:#dedede;--soft:#f5f5f5;--accent:#202020}
+@media(prefers-color-scheme:dark){:root{--bg:#191919;--fg:#f5f5f5;--muted:#aaa;--line:#3b3b3b;--soft:#242424;--accent:#fff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.wrap{max-width:1120px;margin:auto;padding:28px 18px 56px}.calculatorLayout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:40px;align-items:start}.formPane{min-width:0}h1{font-size:clamp(28px,5vw,44px);margin:0 0 8px;letter-spacing:-.035em}h2{font-size:18px;margin:0 0 18px}.notice,.hint{color:var(--muted);font-size:13px;line-height:1.5}.notice{margin-bottom:24px}.card{border-top:1px solid var(--line);padding:24px 0}.step{animation:stepIn .28s ease both}@keyframes stepIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}label,.label{display:block;font-size:14px;font-weight:650;margin-bottom:8px}select,input[type=text],input[type=email],input[type=number],textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:12px;font:inherit}.countrySelect{position:relative}.countryButton{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:12px;text-align:left;font:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center}.countryMenu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 12px 30px rgba(0,0,0,.16)}.countrySearch{margin-bottom:6px}.countryOptions{max-height:220px;overflow:auto}.countryOption{display:block;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;text-align:left;padding:9px 10px;border-radius:7px;cursor:pointer}.countryOption:hover,.countryOption:focus{background:var(--soft);outline:none}.countryEmpty{padding:9px 10px;color:var(--muted);font-size:13px}textarea{min-height:92px;resize:vertical}.rangeRow{display:grid;grid-template-columns:1fr 70px;gap:12px;align-items:center}input[type=range]{width:100%;accent-color:var(--accent)}.choices{display:flex;flex-wrap:wrap;gap:10px}.choice{border:0;border-radius:0;padding:4px 0;font-size:14px;cursor:pointer;user-select:none}.choice input{margin-right:7px}.dimensionHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.dimensionHead label{margin:0}.dimensionInput{width:88px!important;padding:8px 10px!important;text-align:right;-moz-appearance:textfield}.dimensionInput::-webkit-outer-spin-button,.dimensionInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.dimensionUnit{font-size:12px;color:var(--muted);margin-left:5px}.hidden{display:none!important}.summary{position:sticky;top:24px;background:var(--soft);border:1px solid var(--line);border-radius:22px;padding:28px;min-height:260px}.totalBox{display:flex;flex-direction:column;align-items:stretch;gap:22px}.totalLabel{font-size:13px;color:var(--muted);letter-spacing:.02em}.total{font-size:clamp(30px,4vw,46px);font-weight:750;letter-spacing:-.04em;margin-top:5px}.summaryTitle{font-size:14px;font-weight:700;margin-bottom:6px}.summaryHint{font-size:12px;color:var(--muted);line-height:1.5}.summary .button{width:100%;border-radius:10px}.summaryEmpty{font-size:14px;color:var(--muted);line-height:1.5}.button{border:0;border-radius:999px;background:var(--fg);color:var(--bg);font:inherit;font-weight:700;padding:13px 19px;cursor:pointer}.button:disabled{opacity:.35;cursor:not-allowed}.pack{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px}.packIcon{font-size:25px}.legal{font-size:12px;color:var(--muted);line-height:1.55}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}.modalBox{width:min(480px,100%);background:var(--bg);border-radius:16px;padding:22px}.modalHead{display:flex;justify-content:space-between;gap:12px;align-items:start}.x{background:none;border:0;color:var(--fg);font-size:24px;cursor:pointer}.briefField{margin-top:16px}.briefField textarea{min-height:130px}.referenceUpload{margin:16px 0}.uploadRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.attachButton{width:42px;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;line-height:1}.attachButton:hover{background:var(--soft)}.attachButton:focus-visible{outline:2px solid var(--fg);outline-offset:2px}.fileHint{font-size:12px;color:var(--muted)}.fileList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.fileChip{min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px;background:var(--soft);display:flex;align-items:center;gap:8px}.fileIcon{font-size:19px;flex:0 0 auto}.fileName{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.fileRemove{margin-left:auto;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:17px;padding:0 2px;flex:0 0 auto}.uploadError{font-size:12px;color:var(--muted);margin-top:7px}.success{padding:14px;border-radius:10px;background:var(--soft);line-height:1.5}.future{padding:12px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:13px}.inline{display:flex;gap:10px;align-items:center}.inline select{width:auto}@media(max-width:800px){.calculatorLayout{grid-template-columns:1fr;gap:22px}.summary{position:relative;top:auto;order:-1}.grid{grid-template-columns:1fr}.full{grid-column:auto}.button{width:100%}.fileList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>Нарисую вам желаемое</h1>
+<p class="notice">*Итоговая цена обсуждается с вами лично и будет зависеть от сложности работы. Калькулятор показывает только примерную стоимость.</p>
+
+<div class="calculatorLayout"><div class="formPane">
+<section id="stepCurrency" class="card grid step">
+<div class="full"><label for="currency">Валюта</label><select id="currency"><option value="">Выберите валюту</option><option value="RUB">RUB ₽</option><option value="USD">USD $</option><option value="EUR">EUR €</option></select></div>
+</section>
+<section id="stepKind" class="card grid hidden">
+<div class="full"><label for="kind">Что вы ищете?</label><select id="kind"><option value="traditional" selected>Традиционное искусство</option><option value="digital">Цифровое искусство</option><option value="mixed">Смешанная техника</option></select></div>
+</section>
+
+<section id="traditional" class="card hidden">
+<h2>Традиционное искусство</h2>
+<div class="grid">
+<div id="tradStepUnit" class="full step"><label for="tradUnit">Единицы измерения</label><select id="tradUnit"><option value="cm" selected>Сантиметры</option><option value="in">Дюймы</option></select></div>
+<div id="tradStepSize" class="full grid step"><div><div class="dimensionHead"><label for="tradW">Ширина</label><div><input id="tradWInput" class="dimensionInput" type="number" min="0" max="80" value="0" step="1"><span id="tradWUnit" class="dimensionUnit">см</span></div></div><input id="tradW" type="range" min="0" max="80" value="0" step="1"></div>
+<div><div class="dimensionHead"><label for="tradH">Высота</label><div><input id="tradHInput" class="dimensionInput" type="number" min="0" max="80" value="0" step="1"><span id="tradHUnit" class="dimensionUnit">см</span></div></div><input id="tradH" type="range" min="0" max="80" value="0" step="1"></div></div>
+<div id="tradStepSurface" class="full hidden step"><span class="label">Выберите основу</span><div class="choices"><label class="choice"><input type="radio" name="surface" value="linen">Льняной холст</label><label class="choice"><input type="radio" name="surface" value="board">Картонный холст</label><label class="choice"><input type="radio" name="surface" value="paper">Бумага</label></div><p id="linenWarn" class="hint hidden">Картина отправляется без декоративной рамы.<br>Отправка работы на подрамнике планируется в будущем, но пока недоступна.</p></div>
+<div id="materials" class="full hidden step"><span class="label">Материалы</span><div class="choices"><label class="choice"><input type="checkbox" name="material" value="acrylic">Акрил</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="watercolor">Акварель</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="watercolor-pencil">Акварельные карандаши</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="ink">Тушь</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="mono-pencil">Карандаши монохромные</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="color-pencil">Карандаши цветные</label><label class="choice paperMat hidden"><input type="checkbox" name="material" value="pastel">Пастель</label></div></div>
+<div id="tradStepDetail" class="full hidden step"><label>Уровень детализации: <span id="tradDetailOut">100%</span></label><input id="tradDetail" type="range" min="40" max="100" value="100" step="1"></div>
+<div id="tradStepShipping" class="full hidden step"><div id="tradPack"></div><div style="margin-top:16px"><label for="tradCountry">Страна доставки</label><div class="countrySelect" data-country-select="tradCountry"><button class="countryButton" type="button"><span>Россия</span><span>▾</span></button><div class="countryMenu hidden"><input class="countrySearch" type="text" autocomplete="off" placeholder="Поиск страны"><div class="countryOptions"></div></div><input id="tradCountry" type="hidden" value="Россия"></div><p class="hint">Стоимость доставки ориентировочная.</p></div></div>
+</div>
+</section>
+
+<section id="digital" class="card hidden">
+<h2>Цифровое искусство</h2>
+<div class="grid">
+<div id="digStepSize" class="full grid step"><div><div class="dimensionHead"><label for="digW">Ширина</label><div><input id="digWInput" class="dimensionInput" type="number" min="0" max="8000" value="0" step="100"><span class="dimensionUnit">px</span></div></div><input id="digW" type="range" min="0" max="8000" value="0" step="100"></div>
+<div><div class="dimensionHead"><label for="digH">Высота</label><div><input id="digHInput" class="dimensionInput" type="number" min="0" max="8000" value="0" step="100"><span class="dimensionUnit">px</span></div></div><input id="digH" type="range" min="0" max="8000" value="0" step="100"></div></div>
+<div id="digStepSpecs" class="full hidden step"><label for="printSpecs">Характеристики для типографии</label><textarea id="printSpecs" placeholder="Напишите, пожалуйста, необходимые характеристики для вашей типографии, если вы планируете самостоятельно распечатать работу."></textarea></div>
+<div id="digStepFormats" class="full hidden step"><span class="label">Форматы</span><div class="choices formats"><label class="choice"><input type="checkbox" value="PNG">PNG</label><label class="choice"><input type="checkbox" value="JPG">JPG</label><label class="choice"><input type="checkbox" value="TIFF">TIFF</label><label class="choice"><input type="checkbox" value="PDF">PDF</label><label class="choice"><input type="checkbox" value="PSD">PSD (+20%)</label></div></div>
+<div id="digStepDetail" class="full hidden step"><label>Уровень детализации: <span id="digDetailOut">100%</span></label><input id="digDetail" type="range" min="40" max="100" value="100" step="1"></div>
+</div>
+</section>
+
+<section id="mixed" class="card hidden">
+<h2>Смешанная техника</h2>
+<div class="grid">
+<div class="full"><span class="label">Выберите вариант</span><div class="choices"><label class="choice"><input type="radio" name="mixedType" value="print-paint">Традиционные материалы поверх печатного изображения</label><label class="choice"><input type="radio" name="mixedType" value="digital-physical">Цифровой рисунок поверх физической работы</label></div></div>
+<div id="mixedFields" class="full hidden grid">
+<div><label for="mixedUnit">Единицы измерения</label><select id="mixedUnit"><option value="cm" selected>Сантиметры</option><option value="in">Дюймы</option><option value="px">Пиксели</option></select></div><div></div>
+<div><div class="dimensionHead"><label for="mixW">Ширина</label><div><input id="mixWInput" class="dimensionInput" type="number" min="0" max="80" value="0"><span id="mixWUnit" class="dimensionUnit">см</span></div></div><input id="mixW" type="range" min="0" max="80" value="0"></div>
+<div><div class="dimensionHead"><label for="mixH">Высота</label><div><input id="mixHInput" class="dimensionInput" type="number" min="0" max="80" value="0"><span id="mixHUnit" class="dimensionUnit">см</span></div></div><input id="mixH" type="range" min="0" max="80" value="0"></div>
+<div class="full"><span class="label">Форматы цифрового файла</span><div class="choices mixFormats"><label class="choice"><input type="checkbox" value="PNG">PNG</label><label class="choice"><input type="checkbox" value="JPG">JPG</label><label class="choice"><input type="checkbox" value="TIFF">TIFF</label><label class="choice"><input type="checkbox" value="PDF">PDF</label><label class="choice"><input type="checkbox" value="PSD">PSD (+20%)</label></div></div>
+<div class="full"><label>Уровень детализации: <span id="mixDetailOut">100%</span></label><input id="mixDetail" type="range" min="40" max="100" value="100"></div>
+<div id="mixPack" class="full"></div>
+<div class="full"><label for="mixedCountry">Страна доставки</label><div class="countrySelect" data-country-select="mixedCountry"><button class="countryButton" type="button"><span>Россия</span><span>▾</span></button><div class="countryMenu hidden"><input class="countrySearch" type="text" autocomplete="off" placeholder="Поиск страны"><div class="countryOptions"></div></div><input id="mixedCountry" type="hidden" value="Россия"></div><p class="hint">Стоимость доставки ориентировочная.</p></div>
+<div class="full future">Примеры mixed media из Notion будут добавлены сюда позже. Пока блок не показывает пустые карточки.</div>
+<div class="full hint">Отправка работы на подрамнике планируется в будущем.</div>
+</div>
+</div>
+</section>
+
+
+</div>
+<aside class="summary" aria-live="polite">
+<div class="totalBox"><div><div class="totalLabel">Примерная стоимость</div><div id="total" class="total">~ —</div></div><div class="legal"><p>Итоговая стоимость не включает импортные налоги, таможенные пошлины и другие сборы страны получателя. При их наличии они оплачиваются покупателем отдельно.</p><p>Вместе с покупкой работы вы без дополнительной платы получаете право на её коммерческое использование. Авторское право остаётся за художником. При использовании работы необходимо указывать автора.</p></div><button id="discuss" class="button" disabled>Обсудить заказ</button></div>
+</aside>
+</div>
+</main>
+
+<div id="modal" class="modal hidden"><div class="modalBox"><div class="modalHead"><div><h2>Обсудить заказ</h2><p class="hint">Расскажите немного о будущем заказе, чтобы я лучше понял вашу идею.</p></div><button id="closeModal" class="x" aria-label="Закрыть">×</button></div><form id="contactForm"><label for="email">Email</label><input id="email" type="email" required placeholder="name@example.com"><div class="briefField"><label for="orderBrief">Что необходимо нарисовать?</label><textarea id="orderBrief" required placeholder="Опишите вашу идею, сюжет, персонажей, настроение и всё, что считаете важным."></textarea></div><div class="referenceUpload"><label>Референсы <span class="hint">(по желанию)</span></label><div class="uploadRow"><input id="referenceFiles" type="file" multiple hidden><button id="attachFiles" class="attachButton" type="button" aria-label="Прикрепить референсы" title="Прикрепить референсы">📎</button><span class="fileHint">Прикрепите до 8 файлов</span></div><div id="fileList" class="fileList" aria-live="polite"></div><div id="fileError" class="uploadError hidden"></div></div><p class="hint">В заявку будут включены выбранные параметры и примерная стоимость.</p><button class="button" type="submit">Связаться с художником</button></form><div id="success" class="success hidden">Ожидайте ответа в течение суток! Я обязательно всё прочитаю и напишу вам.</div></div></div>
+
+
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const state={rates:{RUB:1,USD:1/92,EUR:1/100}}; // fallback rates; live update attempted below
+const countries=['Россия','Беларусь','Казахстан','Армения','Грузия','Турция','Сербия','Германия','Франция','Италия','Испания','Португалия','Нидерланды','Бельгия','Австрия','Швейцария','Швеция','Норвегия','Финляндия','Дания','Польша','Чехия','Венгрия','Великобритания','США','Канада','Мексика','Бразилия','Аргентина','Япония','Южная Корея','Китай','Австралия','Новая Зеландия','Другая страна'];
+function initCountrySelect(root){
+ const hidden=document.getElementById(root.dataset.countrySelect);
+ const button=root.querySelector('.countryButton');
+ const label=button.querySelector('span');
+ const menu=root.querySelector('.countryMenu');
+ const search=root.querySelector('.countrySearch');
+ const options=root.querySelector('.countryOptions');
+
+ function chooseCountry(country){
+   hidden.value=country;
+   label.textContent=country;
+   menu.classList.add('hidden');
+   search.value='';
+   render();
+   calc();
+ }
+
+ function render(q=''){
+   const query=q.trim().toLocaleLowerCase('ru');
+   const matches=countries.filter(c=>c.toLocaleLowerCase('ru').includes(query));
+   options.innerHTML=matches.length
+     ? matches.map(c=>`<button type="button" class="countryOption" data-country="${c}">${c}</button>`).join('')
+     : '<div class="countryEmpty">Страна не найдена</div>';
+ }
+
+ button.addEventListener('click',e=>{
+   e.stopPropagation();
+   const opening=menu.classList.contains('hidden');
+   document.querySelectorAll('.countryMenu').forEach(m=>m.classList.add('hidden'));
+   if(opening){
+     menu.classList.remove('hidden');
+     search.value='';
+     render();
+     setTimeout(()=>search.focus(),0);
+   }
+ });
+
+ menu.addEventListener('click',e=>{
+   e.stopPropagation();
+   const option=e.target.closest('.countryOption');
+   if(option && options.contains(option)) chooseCountry(option.dataset.country);
+ });
+
+ search.addEventListener('input',()=>render(search.value));
+ render();
+}
+$$('[data-country-select]').forEach(initCountrySelect);
+document.addEventListener('click',e=>{if(!e.target.closest('.countrySelect'))$$('.countryMenu').forEach(m=>m.classList.add('hidden'))});
+function discount(d){if(d===40)return .40;if(d<=50)return .35;if(d<=60)return .30;if(d<=70)return .20;if(d<=80)return .15;if(d<=90)return .10;if(d<=99)return .05;return 0}
+// Pricing is based on artwork AREA. Values between control points are linearly interpolated.
+const areaPricing=[
+ {area:225, material:1000, acrylicHours:8, otherHours:5},
+ {area:900, material:2000, acrylicHours:12, otherHours:8},
+ {area:2500, material:3500, acrylicHours:20, otherHours:14},
+ {area:3600, material:5000, acrylicHours:30, otherHours:20},
+ {area:6400, material:8000, acrylicHours:46, otherHours:30}
+];
+function areaValues(w,h){
+ const area=Math.max(0,w*h);
+ if(area<=areaPricing[0].area)return {...areaPricing[0],area};
+ if(area>=areaPricing.at(-1).area)return {...areaPricing.at(-1),area};
+ for(let i=1;i<areaPricing.length;i++){
+  const lo=areaPricing[i-1],hi=areaPricing[i];
+  if(area<=hi.area){
+   const t=(area-lo.area)/(hi.area-lo.area);
+   return {area,material:lo.material+(hi.material-lo.material)*t,acrylicHours:lo.acrylicHours+(hi.acrylicHours-lo.acrylicHours)*t,otherHours:lo.otherHours+(hi.otherHours-lo.otherHours)*t};
+  }
+ }
+}
+// A second calculation uses the longest physical side as a minimum price floor.
+// The calculator uses the higher result: area-based value or longest-side value.
+function sideValues(w,h){
+ const side=Math.max(w,h);
+ if(side<=15)return {material:1000,acrylicHours:8,otherHours:5};
+ if(side<=30)return {material:2000,acrylicHours:12,otherHours:8};
+ if(side<=50)return {material:3500,acrylicHours:20,otherHours:14};
+ if(side<=60)return {material:5000,acrylicHours:30,otherHours:20};
+ return {material:8000,acrylicHours:46,otherHours:30};
+}
+function physicalValues(w,h){
+ const area=areaValues(w,h), side=sideValues(w,h);
+ return {
+  area:area.area,
+  material:Math.max(area.material,side.material),
+  acrylicHours:Math.max(area.acrylicHours,side.acrylicHours),
+  otherHours:Math.max(area.otherHours,side.otherHours)
+ };
+}
+function cmValue(v,u){return u==='in'?v*2.54:v}
+function isA4(w,h){let a=Math.min(w,h),b=Math.max(w,h);return a<=21&&b<=29.7}
+function shipping(country,pack,b){if(country==='Россия'){return pack==='letter'?450:pack==='tube'?900:1200} const region=countries.indexOf(country); const base=pack==='letter'?1800:pack==='tube'?3000:3800; return base+(b>=50?1200:b>=30?600:0)+(region>20?900:0)}
+function packHTML(type){const x=type==='letter'?['✉️','Письмо / плоская упаковка']:type==='tube'?['🧻','Тубус']:['📦','Картонная посылочная упаковка'];return `<div class="pack"><span class="packIcon">${x[0]}</span><div><b>${x[1]}</b><div class="hint">Способ упаковки выбран автоматически.</div></div></div>`}
+function tradPack(surface,w,h){if((surface==='paper'||surface==='board')&&isA4(w,h))return 'letter';if(surface==='board')return 'box';return 'tube'}
+function money(rub){const cur=$('#currency').value||'RUB', rate=state.rates[cur]||1, n=rub*rate;return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:cur==='RUB'?0:2}).format(n)+' '+({RUB:'₽',USD:'$',EUR:'€'}[cur])}
+function selected(sel){return $$(sel+':checked').map(x=>x.value)}
+function calc(){const kind=$('#kind').value;let rub=0,ready=false,pack=null,country=null,b=30;
+ if(kind==='traditional'){
+  const surface=$('input[name=surface]:checked')?.value, mats=selected('input[name=material]'); if(surface&&mats.length){const u=$('#tradUnit').value,w=cmValue(+$('#tradW').value,u),h=cmValue(+$('#tradH').value,u);const av=physicalValues(w,h);b=Math.sqrt(av.area);const hasA=mats.includes('acrylic');const baseWork=(hasA?av.acrylicHours*2000:av.otherHours*1500)*(1-discount(+$('#tradDetail').value));const materialMultiplier=1+Math.max(0,mats.length-1)*0.03;const work=baseWork*materialMultiplier;pack=tradPack(surface,w,h);country=$('#tradCountry').value||'Россия';rub=work+av.material+shipping(country,pack,b);ready=true;$('#tradPack').innerHTML=packHTML(pack);$('#tradPack').classList.remove('hidden')}}
+ if(kind==='digital'){const work=45000*(1-discount(+$('#digDetail').value));rub=(work+2000)/1.4;if(selected('.formats input').includes('PSD'))rub*=1.2;ready=true}
+ if(kind==='mixed'){const mt=$('input[name=mixedType]:checked')?.value;if(mt){const u=$('#mixedUnit').value;let w=+$('#mixW').value,h=+$('#mixH').value;if(u==='in'){w*=2.54;h*=2.54}else if(u==='px'){w=w/100;h=h/100}const av=physicalValues(w,h);b=Math.sqrt(av.area);pack=isA4(w,h)?'letter':'tube';country=$('#mixedCountry').value||'Россия';const work=45000*(1-discount(+$('#mixDetail').value));rub=work+2000+av.material+shipping(country,pack,b);if(selected('.mixFormats input').includes('PSD'))rub*=1.2;ready=true;$('#mixPack').innerHTML=packHTML(pack)}}
+ const hasCurrency=!!$('#currency').value; const finalReady=ready&&hasCurrency; $('#total').textContent=finalReady?'~ '+money(rub):'~ —'; $('#discuss').disabled=!finalReady;return {rub,ready:finalReady,kind,pack,country}}
+function setKind(){['traditional','digital','mixed'].forEach(id=>$('#'+id).classList.toggle('hidden',$('#kind').value!==id));const k=$('#kind').value;if(k==='traditional'){updateTradRanges();$('#tradStepSurface').classList.add('hidden')}if(k==='digital'){$('#digStepSpecs').classList.add('hidden');$('#digStepFormats').classList.add('hidden');$('#digStepDetail').classList.add('hidden')}calc()}
+$('#kind').addEventListener('change',setKind);$('#currency').addEventListener('change',()=>{const on=!!$('#currency').value;$('#stepKind').classList.toggle('hidden',!on);if(on){$('#stepKind').classList.add('step');setKind()}else{['traditional','digital','mixed'].forEach(id=>$('#'+id).classList.add('hidden'));calc()}});
+function updateTradRanges(){const u=$('#tradUnit').value;if(!u){$('#tradStepSize').classList.add('hidden');$('#tradStepSurface').classList.add('hidden');return}$('#tradStepSize').classList.remove('hidden');const max=u==='cm'?80:31.5,min=0,step=u==='cm'?1:.1;[['tradW','tradWOut'],['tradH','tradHOut']].forEach(([id,out])=>{const el=$('#'+id);let cm=cmValue(+el.value,el.dataset.unit||'cm');el.min=min;el.max=max;el.step=step;el.value=u==='cm'?Math.min(80,cm):Math.min(31.5,cm/2.54);el.dataset.unit=u;$('#'+out).textContent=(+el.value).toFixed(u==='cm'?0:1)+' '+u;const inp=$('#'+id+'Input');if(inp){inp.min=min;inp.max=max;inp.step=step;inp.value=el.value;$('#'+id+'Unit').textContent=u==='cm'?'см':'in'}});calc()}
+$('#tradUnit').addEventListener('change',updateTradRanges);
+function syncTradDimension(axis,fromInput=false){const u=$('#tradUnit').value, range=$('#trad'+axis), input=$('#trad'+axis+'Input');if(fromInput){if(input.value===''){range.value=0;calc();return}const v=Number(input.value);if(Number.isFinite(v)){range.value=Math.max(+range.min,Math.min(+range.max,v))}}else input.value=range.value;$('#trad'+axis+'Unit').textContent=u==='cm'?'см':'in';$('#tradStepSurface').classList.remove('hidden');calc()}
+function finishTradDimension(axis){const range=$('#trad'+axis),input=$('#trad'+axis+'Input');let v=Number(input.value);if(!Number.isFinite(v)||input.value==='')v=0;v=Math.max(+range.min,Math.min(+range.max,v));range.value=v;input.value=v;calc()}
+['W','H'].forEach(axis=>{$('#trad'+axis).addEventListener('input',()=>syncTradDimension(axis));$('#trad'+axis+'Input').addEventListener('input',()=>syncTradDimension(axis,true));$('#trad'+axis+'Input').addEventListener('change',()=>finishTradDimension(axis));});
+$$('input[name=surface]').forEach(x=>x.addEventListener('change',()=>{const s=$('input[name=surface]:checked')?.value;$('#linenWarn').classList.toggle('hidden',s!=='linen');$('#materials').classList.remove('hidden');$$('.paperMat').forEach(e=>e.classList.toggle('hidden',s!=='paper'));if(s!=='paper')$$('.paperMat input').forEach(i=>i.checked=false);calc()}));
+$$('input[name=material]').forEach(x=>x.addEventListener('change',()=>{const any=selected('input[name=material]').length>0;$('#tradStepDetail').classList.toggle('hidden',!any);$('#tradStepShipping').classList.toggle('hidden',!any);calc()}));
+$('#tradDetail').addEventListener('input',()=>{$('#tradDetailOut').textContent=$('#tradDetail').value+'%';calc()});
+function syncDigitalDimension(axis,fromInput=false){const range=$('#dig'+axis),input=$('#dig'+axis+'Input');if(fromInput){if(input.value===''){range.value=0;calc();return}const v=Number(input.value);if(Number.isFinite(v)){range.value=Math.max(+range.min,Math.min(+range.max,v))}}else input.value=range.value;$('#digStepSpecs').classList.remove('hidden');calc()}
+function finishDigitalDimension(axis){const range=$('#dig'+axis),input=$('#dig'+axis+'Input');let v=Number(input.value);if(!Number.isFinite(v)||input.value==='')v=0;v=Math.max(+range.min,Math.min(+range.max,v));range.value=v;input.value=v;calc()}
+['W','H'].forEach(axis=>{$('#dig'+axis).addEventListener('input',()=>syncDigitalDimension(axis));$('#dig'+axis+'Input').addEventListener('input',()=>syncDigitalDimension(axis,true));$('#dig'+axis+'Input').addEventListener('change',()=>finishDigitalDimension(axis));});$('#printSpecs').addEventListener('input',()=>{$('#digStepFormats').classList.remove('hidden')});$$('.formats input').forEach(x=>x.addEventListener('change',()=>{if(selected('.formats input').length)$('#digStepDetail').classList.remove('hidden');calc()}));$('#digDetail').addEventListener('input',()=>{$('#digDetailOut').textContent=$('#digDetail').value+'%';calc()});
+$$('input[name=mixedType]').forEach(x=>x.addEventListener('change',()=>{$('#mixedFields').classList.remove('hidden');calc()}));
+function updateMixRanges(){const u=$('#mixedUnit').value;let min=0,max=80,step=1;if(u==='in'){min=0;max=31.5;step=.1}if(u==='px'){min=0;max=8000;step=100}for(const id of ['mixW','mixH']){$('#'+id).min=min;$('#'+id).max=max;$('#'+id).step=step;$('#'+id).value=0;$('#'+id+'Out').textContent=$('#'+id).value+' '+u;const inp=$('#'+id+'Input');if(inp){inp.min=min;inp.max=max;inp.step=step;inp.value=$('#'+id).value;$('#'+id+'Unit').textContent=u==='cm'?'см':u==='in'?'in':'px'}}calc()}
+$('#mixedUnit').addEventListener('change',updateMixRanges);function syncMixDimension(axis,fromInput=false){const range=$('#mix'+axis),input=$('#mix'+axis+'Input');if(fromInput){if(input.value===''){range.value=0;calc();return}const v=Number(input.value);if(Number.isFinite(v)){range.value=Math.max(+range.min,Math.min(+range.max,v))}}else input.value=range.value;{const u=$('#mixedUnit').value;$('#mix'+axis+'Unit').textContent=u==='cm'?'см':u==='in'?'in':'px'}calc()}function finishMixDimension(axis){const range=$('#mix'+axis),input=$('#mix'+axis+'Input');let v=Number(input.value);if(!Number.isFinite(v)||input.value==='')v=0;v=Math.max(+range.min,Math.min(+range.max,v));range.value=v;input.value=v;calc()}['W','H'].forEach(axis=>{$('#mix'+axis).addEventListener('input',()=>syncMixDimension(axis));$('#mix'+axis+'Input').addEventListener('input',()=>syncMixDimension(axis,true));$('#mix'+axis+'Input').addEventListener('change',()=>finishMixDimension(axis));});$$('.mixFormats input').forEach(x=>x.addEventListener('change',calc));$('#mixDetail').addEventListener('input',()=>{$('#mixDetailOut').textContent=$('#mixDetail').value+'%';calc()});
+let referenceFiles=[];
+function fileIcon(file){
+ const type=file.type||'',name=file.name.toLowerCase();
+ if(type.startsWith('image/'))return '🖼️';
+ if(type==='application/pdf'||name.endsWith('.pdf'))return '📕';
+ if(type.startsWith('video/'))return '🎬';
+ if(type.startsWith('text/')||/\.(doc|docx|txt|rtf)$/i.test(name))return '📄';
+ return '📎';
+}
+function renderReferenceFiles(){
+ const list=$('#fileList');
+ list.innerHTML=referenceFiles.map((file,i)=>`<div class="fileChip" title="${file.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}"><span class="fileIcon">${fileIcon(file)}</span><span class="fileName">${file.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button class="fileRemove" type="button" data-remove-file="${i}" aria-label="Удалить ${file.name.replace(/"/g,'&quot;')}">×</button></div>`).join('');
+}
+$('#attachFiles').addEventListener('click',()=>$('#referenceFiles').click());
+$('#referenceFiles').addEventListener('change',e=>{
+ const incoming=[...e.target.files];
+ const room=8-referenceFiles.length;
+ const accepted=incoming.slice(0,Math.max(0,room));
+ referenceFiles.push(...accepted);
+ const error=$('#fileError');
+ if(incoming.length>room){error.textContent='Можно прикрепить максимум 8 файлов.';error.classList.remove('hidden')}else error.classList.add('hidden');
+ renderReferenceFiles();
+ e.target.value='';
+});
+$('#fileList').addEventListener('click',e=>{
+ const remove=e.target.closest('[data-remove-file]');
+ if(!remove)return;
+ referenceFiles.splice(+remove.dataset.removeFile,1);
+ $('#fileError').classList.add('hidden');
+ renderReferenceFiles();
+});
+$('#discuss').addEventListener('click',()=>$('#modal').classList.remove('hidden'));$('#closeModal').addEventListener('click',()=>$('#modal').classList.add('hidden'));$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').classList.add('hidden')});
+$('#contactForm').addEventListener('submit',e=>{e.preventDefault();$('#contactForm').classList.add('hidden');$('#success').classList.remove('hidden')});
+// Best-effort live FX. If unavailable, fallback rates above keep the widget functional.
+fetch('https://open.er-api.com/v6/latest/RUB').then(r=>r.json()).then(d=>{if(d&&d.rates){state.rates.USD=d.rates.USD;state.rates.EUR=d.rates.EUR;calc()}}).catch(()=>{});
+calc();
+</script>
+</body>
+</html>
