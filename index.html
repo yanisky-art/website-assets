@@ -748,6 +748,12 @@
     .builder-width-btn{appearance:none;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;padding:7px 4px;font:inherit;font-size:11px;cursor:pointer}
     .builder-width-btn.active{background:#222;color:#fff;border-color:#222}
     .builder-height-row{display:flex;gap:6px;margin-top:7px}.builder-height-row input{min-width:0;flex:1;padding:7px;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit}
+    /* Fluid typography/content inside native Page Builder blocks */
+    .page-block{container-type:inline-size}
+    .page-block .block-title{font-size:clamp(18px,5.2cqw,30px);line-height:1.08;overflow-wrap:anywhere}
+    .page-block .block-text{font-size:clamp(10px,1.9cqw,15px);line-height:clamp(1.35,1.2 + .5cqw,1.6);overflow-wrap:anywhere}
+    .page-block .block-button-demo{font-size:clamp(10px,1.6cqw,13px);padding:clamp(7px,1.4cqw,10px) clamp(10px,2.2cqw,16px)}
+    @container (max-width:360px){.block-title{margin-bottom:7px}.block-text{line-height:1.45}}
     .builder-canvas.mobile .page-block{grid-column:1/-1!important}
     @media(prefers-color-scheme:dark){
       .page-block:hover{border-color:#444}.page-block.selected{border-color:#6f8cff}
