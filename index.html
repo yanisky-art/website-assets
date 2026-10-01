@@ -3003,8 +3003,8 @@
       if(b.type==="site-menu")return '<iframe class="block-widget-frame builder-menu-frame" src="./menu/" title="Меню сайта"></iframe>';
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
-      if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости"></iframe>';
-      if(b.type==="saved-widget" && b.url)return '<iframe class="block-widget-frame" src="'+builderEsc(b.url)+'" title="'+builderEsc(b.title||"Widget")+'"></iframe>';
+      if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости" scrolling="no"></iframe>';
+      if(b.type==="saved-widget" && b.url)return '<iframe class="block-widget-frame" src="'+builderEsc(b.url)+'" title="'+builderEsc(b.title||"Widget")+'" scrolling="no"></iframe>';
       return '<p class="block-text">Блок</p>';
     }
 
