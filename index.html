@@ -1227,7 +1227,10 @@
     const URL_PARAMS = new URLSearchParams(window.location.search);
     const EDITOR_QUERY = URL_PARAMS.get("editor");
     const PREVIEW_MODE = URL_PARAMS.get("preview") === "1";
-    if (PREVIEW_MODE) document.body.classList.add("builder-preview-mode");
+    if (PREVIEW_MODE) {
+      document.body.classList.add("builder-preview-mode");
+      document.querySelectorAll("body > .container").forEach(el=>el.style.display="none");
+    }
     else if (!EDITOR_QUERY) document.body.classList.add("builder-mode");
 
     const MAX_NOTEBOOK_PAGES =
@@ -3227,7 +3230,7 @@
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
     }));
-    document.getElementById("builder-preview")?.addEventListener("click",()=>{builderPersist();const u=new URL(window.location.href);u.searchParams.delete("editor");u.searchParams.set("preview","1");u.searchParams.set("page",builderPage().id);window.open(u.toString(),"_blank","noopener")});\n    document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
+\n    document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
     document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
     document.getElementById("builder-add-page")?.addEventListener("click",()=>{
       const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
