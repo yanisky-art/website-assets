@@ -723,7 +723,7 @@
     /* PAGE BUILDER V4 - 24-column grid and live 8-way resizing */
     .builder-canvas{padding:12px;box-sizing:border-box;overflow:visible}
     .builder-grid{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:6px;align-items:start}
-    .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:hidden}
+    .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:hidden;transform:translate(var(--builder-offset-x,0px),var(--builder-offset-y,0px))}
     .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
     .page-block.resizing{user-select:none;transition:none!important}
     .page-block.resizing iframe{pointer-events:none}
@@ -3058,22 +3058,35 @@
             const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height;
             const col=gridRect.width/24;
             const move=ev=>{
-              let nextSpan=startSpan,nextHeight=startHeight;
-              if(dir.includes("e"))nextSpan=Math.round(startSpan+(ev.clientX-startX)/col);
-              if(dir.includes("w"))nextSpan=Math.round(startSpan-(ev.clientX-startX)/col);
-              if(dir.includes("s"))nextHeight=Math.round(startHeight+(ev.clientY-startY));
-              if(dir.includes("n"))nextHeight=Math.round(startHeight-(ev.clientY-startY));
+              const dx=ev.clientX-startX,dy=ev.clientY-startY;
+              let nextSpan=startSpan,nextHeight=startHeight,offsetX=0,offsetY=0;
+              if(dir.includes("e"))nextSpan=Math.round(startSpan+dx/col);
+              if(dir.includes("w"))nextSpan=Math.round(startSpan-dx/col);
+              if(dir.includes("s"))nextHeight=Math.round(startHeight+dy);
+              if(dir.includes("n"))nextHeight=Math.round(startHeight-dy);
               nextSpan=Math.max(2,Math.min(24,nextSpan));nextHeight=Math.max(48,nextHeight);
               block.span=nextSpan;block.gridVersion=24;
               if(dir.includes("n")||dir.includes("s"))block.height=nextHeight;
+
+              // CSS Grid normally anchors the block at top-left. For west/north
+              // resizing, translate the live preview by exactly the change in
+              // size so the right/bottom edge stays fixed under the cursor.
+              if(dir.includes("w"))offsetX=(startSpan-nextSpan)*col;
+              if(dir.includes("n"))offsetY=startHeight-nextHeight;
+
               el.style.setProperty("--builder-span",nextSpan);
+              el.style.setProperty("--builder-offset-x",offsetX+"px");
+              el.style.setProperty("--builder-offset-y",offsetY+"px");
               if(block.height)el.style.setProperty("--builder-height",block.height+"px");
               el.querySelector(".builder-size-readout").textContent=Math.round(nextSpan/24*100)+"% × "+(block.height?block.height+"px":"auto");
             };
             const finish=ev=>{
               try{handle.releasePointerCapture(ev.pointerId)}catch(err){}
               handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
-              el.draggable=true;el.classList.remove("resizing");builderRenderInspector();
+              el.draggable=true;el.classList.remove("resizing");
+              // Re-render after release so temporary north/west preview offsets
+              // are cleared and the grid commits the new dimensions cleanly.
+              builderRenderCanvas();builderRenderInspector();
             };
             handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
