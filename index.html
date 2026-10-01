@@ -684,6 +684,41 @@
     @media(max-width:1100px){.builder-shell{grid-template-columns:150px 190px minmax(320px,1fr)}.builder-inspector{grid-column:1/-1;border-left:0!important;border-top:1px solid #ddd}.builder-shell{min-height:auto}}
     @media(max-width:760px){.builder-shell{display:block}.builder-panel{border-right:0;border-bottom:1px solid #ddd}.builder-main{min-height:600px}}
 
+    /* PAGE BUILDER V2 - full workspace */
+    body.builder-mode{padding:0;overflow:hidden}
+    body.builder-mode>.container{max-width:none;width:100%;height:100vh;margin:0}
+    body.builder-mode>.container>h1,
+    body.builder-mode>.container>.subtitle,
+    body.builder-mode>.container>.tabs,
+    body.builder-mode>.container>.library,
+    body.builder-mode>#button-tool,
+    body.builder-mode>#notebook-tool{display:none!important}
+    body.builder-mode>#page-builder-tool{display:block!important;height:100vh}
+    body.builder-mode .builder-shell{height:100vh;min-height:0;border:0;border-radius:0;grid-template-columns:220px 270px minmax(520px,1fr) 280px}
+    body.builder-mode .builder-panel{padding:18px;overflow:auto}
+    body.builder-mode .builder-main{min-height:0}
+    body.builder-mode .builder-canvas-wrap{padding:20px;overflow:auto}
+    body.builder-mode .builder-canvas{max-width:1200px;min-height:calc(100vh - 82px)}
+    .builder-section-spacer{height:28px}
+    .builder-create-links{display:flex;flex-direction:column;gap:7px}
+    .builder-create-link{appearance:none;width:100%;border:1px solid #ddd;border-radius:8px;background:transparent;color:inherit;text-align:left;padding:10px;font:inherit;font-size:13px;cursor:pointer}
+    .builder-create-link:hover{background:#f5f5f5}
+    .builder-saved-widgets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .builder-saved-widget{min-width:0;border:1px solid #ddd;border-radius:9px;padding:7px;background:transparent;color:inherit;cursor:grab;text-align:left}
+    .builder-saved-widget:active{cursor:grabbing}
+    .builder-saved-widget img{width:100%;aspect-ratio:1/1;display:block;object-fit:cover;border-radius:6px;background:#eee}
+    .builder-saved-widget .widget-placeholder{height:70px;display:grid;place-items:center;font-size:24px}
+    .builder-saved-widget-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px;opacity:.7}
+    .builder-drop-ready{outline:2px dashed #6f8cff;outline-offset:-8px}
+    @media(prefers-color-scheme:dark){
+      .builder-create-link,.builder-saved-widget{border-color:#444}
+      .builder-create-link:hover{background:#242424}
+      .builder-saved-widget img{background:#242424}
+    }
+    @media(max-width:1250px){
+      body.builder-mode .builder-shell{grid-template-columns:190px 230px minmax(430px,1fr) 240px}
+    }
+
   </style>
 </head>
 
@@ -1056,6 +1091,12 @@
           <p class="builder-kicker">Страницы</p>
           <div class="builder-pages" id="builder-pages"></div>
           <button class="builder-page" id="builder-add-page" type="button">＋ New Page</button>
+          <div class="builder-section-spacer"></div>
+          <p class="builder-kicker">Создать виджет</p>
+          <div class="builder-create-links">
+            <button class="builder-create-link" data-widget-editor="button-tool" type="button">Interactive Button ↗</button>
+            <button class="builder-create-link" data-widget-editor="notebook-tool" type="button">Notebook Viewer ↗</button>
+          </div>
         </aside>
 
         <aside class="builder-panel">
@@ -1066,8 +1107,11 @@
             <button class="builder-block" data-builder-add="button" type="button">Кнопка<small>Ссылка или действие</small></button>
             <button class="builder-block" data-builder-add="divider" type="button">Разделитель<small>Тонкая линия</small></button>
             <button class="builder-block" data-builder-add="spacer" type="button">Пустое пространство<small>Вертикальный отступ</small></button>
-            <button class="builder-block" data-builder-add="price-calculator" type="button">Калькулятор стоимости<small>Готовый виджет</small></button>
+
           </div>
+          <div class="builder-section-spacer"></div>
+          <p class="builder-kicker">Сохранённые виджеты - добавить на сайт</p>
+          <div class="builder-saved-widgets" id="builder-saved-widgets"></div>
         </aside>
 
         <section class="builder-main">
@@ -1118,6 +1162,11 @@
 
     const STORAGE_KEY =
       "myWebsiteWidgets";
+
+    const EDITOR_QUERY = new URLSearchParams(window.location.search).get("editor");
+    if (!EDITOR_QUERY) {
+      document.body.classList.add("builder-mode");
+    }
 
     const MAX_NOTEBOOK_PAGES =
       200;
@@ -2911,6 +2960,7 @@
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости"></iframe>';
+      if(b.type==="saved-widget" && b.url)return '<iframe class="block-widget-frame" src="'+builderEsc(b.url)+'" title="'+builderEsc(b.title||"Widget")+'"></iframe>';
       return '<p class="block-text">Блок</p>';
     }
 
@@ -2937,15 +2987,63 @@
       const host=document.getElementById("builder-inspector"); if(!host)return;
       const b=builderPage().blocks.find(x=>x.id===builderSelected);
       if(!b){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
-      if(["divider","spacer","price-calculator"].includes(b.type)){
-        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
+      if(["divider","spacer","price-calculator","saved-widget"].includes(b.type)){
+        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="saved-widget"?(b.title||"Сохранённый виджет"):b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
       }
       host.innerHTML='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(b.title||"")+'</textarea></div><div class="inspector-field"><label>'+(b.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(b.text||"")+'</textarea></div>';
       const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
       t.oninput=()=>{b.title=t.value;builderRenderCanvas()}; x.oninput=()=>{b.text=x.value;builderRenderCanvas()};
     }
 
-    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderInspector()}
+
+    function builderSavedWidgets(){
+      const host=document.getElementById("builder-saved-widgets"); if(!host)return;
+      host.innerHTML="";
+      const widgets=getWidgets();
+      const all=[{type:"price-calculator",name:"Калькулятор стоимости",url:new URL("./price-calculator/",window.location.href).toString(),system:true},...widgets];
+      if(!all.length){host.innerHTML='<p class="builder-note">Пока нет сохранённых виджетов.</p>';return}
+      all.forEach((w,index)=>{
+        const card=document.createElement("div");card.className="builder-saved-widget";card.draggable=true;
+        const imagePath=w.preview||w.cover||w.image||"";
+        if(imagePath){
+          const img=document.createElement("img");
+          img.src=/^https?:\/\//i.test(imagePath)?imagePath:assetUrl(imagePath);
+          card.appendChild(img);
+        }else{
+          const ph=document.createElement("div");ph.className="widget-placeholder";ph.textContent=w.type==="price-calculator"?"⌗":w.type==="notebook"?"📖":"✦";card.appendChild(ph);
+        }
+        const n=document.createElement("div");n.className="builder-saved-widget-name";n.textContent=w.name||"Widget";card.appendChild(n);
+        const payload={kind:"widget",widget:{type:w.type,name:w.name||"Widget",url:w.url||"",system:!!w.system}};
+        card.ondragstart=e=>e.dataTransfer.setData("application/json",JSON.stringify(payload));
+        card.ondblclick=()=>builderInsertWidget(payload.widget);
+        host.appendChild(card);
+      });
+    }
+
+    function builderInsertWidget(w,atIndex=null){
+      const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||""};
+      const blocks=builderPage().blocks;
+      if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
+      builderSelected=block.id;builderRender();
+    }
+
+    document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
+      const u=new URL(window.location.href);u.searchParams.set("editor",btn.dataset.widgetEditor);
+      window.open(u.toString(),"_blank","noopener");
+    }));
+
+    function builderEnableCanvasDrop(){
+      const canvas=document.getElementById("builder-canvas");if(!canvas)return;
+      canvas.ondragover=e=>{if(e.dataTransfer.types.includes("application/json")){e.preventDefault();canvas.classList.add("builder-drop-ready")}};
+      canvas.ondragleave=e=>{if(!canvas.contains(e.relatedTarget))canvas.classList.remove("builder-drop-ready")};
+      canvas.addEventListener("drop",e=>{
+        const raw=e.dataTransfer.getData("application/json");if(!raw)return;
+        e.preventDefault();e.stopPropagation();canvas.classList.remove("builder-drop-ready");
+        try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget)}catch(err){}
+      });
+    }
+
+    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop()}
     builderLoad();
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>btn.addEventListener("click",()=>{
@@ -2972,6 +3070,11 @@
     /* ===================================== */
 
     renderWidgets();
+
+    if (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool") {
+      document.body.classList.remove("builder-mode");
+      openTab(EDITOR_QUERY);
+    }
 
   </script>
 
