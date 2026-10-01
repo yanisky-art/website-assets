@@ -726,7 +726,7 @@
     .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:visible;transform:translate(var(--builder-offset-x,0px),var(--builder-offset-y,0px))}
     .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
     .page-block.resizing{user-select:none;transition:none!important}
-    .page-block.resizing iframe{pointer-events:none}\n    .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
+    .page-block.resizing iframe{pointer-events:none}\n    .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}\n    .page-block:has(.block-widget-frame){padding:0}\n    .page-block:has(.block-widget-frame)>.block-widget-frame{border-radius:8px}\n    .page-block:has(.block-widget-frame)>.builder-size-readout{right:12px;bottom:10px}
     .builder-insert-zone{grid-column:1/-1;height:12px;border-radius:999px;position:relative;transition:.12s ease}
     .builder-insert-zone::after{content:"";position:absolute;left:8px;right:8px;top:5px;height:2px;background:transparent;border-radius:999px}
     .builder-insert-zone.active{height:28px;background:rgba(111,140,255,.08)}
