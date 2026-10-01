@@ -720,27 +720,39 @@
       body.builder-mode .builder-shell{grid-template-columns:190px 230px minmax(430px,1fr) 240px}
     }
 
-    /* PAGE BUILDER V3 - grid, drop zones and resize handles */
+    /* PAGE BUILDER V4 - 24-column grid and live 8-way resizing */
     .builder-canvas{padding:12px;box-sizing:border-box;overflow:visible}
-    .builder-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start}
-    .page-block{grid-column:span var(--builder-span,12);min-width:0;border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box}
-    .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff}
+    .builder-grid{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:6px;align-items:start}
+    .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:hidden}
+    .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
+    .page-block.resizing{user-select:none;transition:none!important}
+    .page-block.resizing iframe{pointer-events:none}
     .builder-insert-zone{grid-column:1/-1;height:12px;border-radius:999px;position:relative;transition:.12s ease}
     .builder-insert-zone::after{content:"";position:absolute;left:8px;right:8px;top:5px;height:2px;background:transparent;border-radius:999px}
     .builder-insert-zone.active{height:28px;background:rgba(111,140,255,.08)}
     .builder-insert-zone.active::after{background:#6f8cff}
-    .builder-resize-handle{position:absolute;top:50%;right:-6px;width:12px;height:46px;transform:translateY(-50%);cursor:ew-resize;z-index:8;display:none}
-    .builder-resize-handle::after{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;border-radius:2px;background:#6f8cff}
+    .builder-resize-handle{position:absolute;z-index:20;display:none;touch-action:none}
     .page-block.selected .builder-resize-handle{display:block}
-    .builder-width-readout{position:absolute;right:8px;bottom:6px;font-size:10px;padding:3px 6px;border-radius:999px;background:#6f8cff;color:white;display:none;z-index:9}
-    .page-block.resizing .builder-width-readout{display:block}
+    .builder-resize-handle[data-dir="n"],.builder-resize-handle[data-dir="s"]{left:18px;right:18px;height:10px;cursor:ns-resize}
+    .builder-resize-handle[data-dir="n"]{top:-5px}.builder-resize-handle[data-dir="s"]{bottom:-5px}
+    .builder-resize-handle[data-dir="e"],.builder-resize-handle[data-dir="w"]{top:18px;bottom:18px;width:10px;cursor:ew-resize}
+    .builder-resize-handle[data-dir="e"]{right:-5px}.builder-resize-handle[data-dir="w"]{left:-5px}
+    .builder-resize-handle[data-dir="ne"],.builder-resize-handle[data-dir="nw"],.builder-resize-handle[data-dir="se"],.builder-resize-handle[data-dir="sw"]{width:14px;height:14px;border:2px solid #6f8cff;background:#191919;border-radius:3px}
+    .builder-resize-handle[data-dir="ne"]{right:-7px;top:-7px;cursor:nesw-resize}.builder-resize-handle[data-dir="nw"]{left:-7px;top:-7px;cursor:nwse-resize}
+    .builder-resize-handle[data-dir="se"]{right:-7px;bottom:-7px;cursor:nwse-resize}.builder-resize-handle[data-dir="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize}
+    .builder-resize-handle[data-dir="n"]::after,.builder-resize-handle[data-dir="s"]::after{content:"";position:absolute;left:50%;width:34px;height:2px;transform:translateX(-50%);background:#6f8cff;border-radius:2px;top:4px}
+    .builder-resize-handle[data-dir="e"]::after,.builder-resize-handle[data-dir="w"]::after{content:"";position:absolute;top:50%;height:34px;width:2px;transform:translateY(-50%);background:#6f8cff;border-radius:2px;left:4px}
+    .builder-size-readout{position:absolute;right:10px;bottom:8px;font-size:10px;padding:4px 7px;border-radius:999px;background:#6f8cff;color:#fff;display:none;z-index:21;pointer-events:none}
+    .page-block.resizing .builder-size-readout{display:block}
     .builder-width-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}
     .builder-width-btn{appearance:none;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;padding:7px 4px;font:inherit;font-size:11px;cursor:pointer}
     .builder-width-btn.active{background:#222;color:#fff;border-color:#222}
+    .builder-height-row{display:flex;gap:6px;margin-top:7px}.builder-height-row input{min-width:0;flex:1;padding:7px;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit}
     .builder-canvas.mobile .page-block{grid-column:1/-1!important}
     @media(prefers-color-scheme:dark){
       .page-block:hover{border-color:#444}.page-block.selected{border-color:#6f8cff}
       .builder-width-btn{border-color:#555}.builder-width-btn.active{background:#fff;color:#191919;border-color:#fff}
+      .builder-height-row input{border-color:#555}.builder-resize-handle[data-dir="ne"],.builder-resize-handle[data-dir="nw"],.builder-resize-handle[data-dir="se"],.builder-resize-handle[data-dir="sw"]{background:#191919}
     }
 
   </style>
@@ -2990,8 +3002,16 @@
       return '<p class="block-text">Блок</p>';
     }
 
-    function builderSpan(b){const n=Number(b.span||12);return [3,4,6,8,9,12].includes(n)?n:12}
-    function builderSetSpan(block,span){block.span=Math.max(3,Math.min(12,span));builderRenderCanvas();builderRenderInspector()}
+    function builderSpan(block){
+      if(block.gridVersion!==24){
+        const old=Number(block.span||12);
+        block.span=Math.max(2,Math.min(24,old<=12?old*2:old));
+        block.gridVersion=24;
+      }
+      return Math.max(2,Math.min(24,Number(block.span||24)));
+    }
+    function builderSetSpan(block,span){block.span=Math.max(2,Math.min(24,Number(span)));block.gridVersion=24;builderRenderCanvas();builderRenderInspector()}
+    function builderHeight(block){return block.height?Math.max(48,Number(block.height)):null}
 
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
@@ -3022,21 +3042,42 @@
 
       grid.appendChild(zone(0));
       page.blocks.forEach((block,i)=>{
-        if(!block.span)block.span=12;
-        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"");el.draggable=true;el.dataset.id=block.id;el.style.setProperty("--builder-span",builderSpan(block));
-        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+'<div class="builder-resize-handle" title="Изменить ширину"></div><div class="builder-width-readout">'+Math.round(builderSpan(block)/12*100)+'%</div>';
+        const span=builderSpan(block),height=builderHeight(block);
+        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"");el.draggable=true;el.dataset.id=block.id;
+        el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");
+        const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
+        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
         el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderRenderCanvas();builderRenderInspector()};
         el.ondragstart=e=>{if(el.classList.contains("resizing")){e.preventDefault();return}el.classList.add("dragging");e.dataTransfer.setData("text/plain",block.id)};
         el.ondragend=()=>el.classList.remove("dragging");
 
-        const handle=el.querySelector(".builder-resize-handle");
-        handle.onmousedown=e=>{
-          e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("resizing");
-          const rect=grid.getBoundingClientRect(),start=e.clientX,startSpan=builderSpan(block),col=rect.width/12;
-          const move=ev=>{const delta=Math.round((ev.clientX-start)/col);const raw=Math.max(3,Math.min(12,startSpan+delta));const snaps=[3,4,6,8,9,12];const snap=snaps.reduce((p,n)=>Math.abs(n-raw)<Math.abs(p-raw)?n:p,snaps[0]);block.span=snap;el.style.setProperty("--builder-span",snap);el.querySelector(".builder-width-readout").textContent=Math.round(snap/12*100)+"%"};
-          const up=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);el.draggable=true;el.classList.remove("resizing");builderRenderInspector()};
-          document.addEventListener("mousemove",move);document.addEventListener("mouseup",up);
-        };
+        el.querySelectorAll(".builder-resize-handle").forEach(handle=>{
+          handle.onpointerdown=e=>{
+            e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("selected","resizing");
+            handle.setPointerCapture(e.pointerId);
+            const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height;
+            const col=gridRect.width/24;
+            const move=ev=>{
+              let nextSpan=startSpan,nextHeight=startHeight;
+              if(dir.includes("e"))nextSpan=Math.round(startSpan+(ev.clientX-startX)/col);
+              if(dir.includes("w"))nextSpan=Math.round(startSpan-(ev.clientX-startX)/col);
+              if(dir.includes("s"))nextHeight=Math.round(startHeight+(ev.clientY-startY));
+              if(dir.includes("n"))nextHeight=Math.round(startHeight-(ev.clientY-startY));
+              nextSpan=Math.max(2,Math.min(24,nextSpan));nextHeight=Math.max(48,nextHeight);
+              block.span=nextSpan;block.gridVersion=24;
+              if(dir.includes("n")||dir.includes("s"))block.height=nextHeight;
+              el.style.setProperty("--builder-span",nextSpan);
+              if(block.height)el.style.setProperty("--builder-height",block.height+"px");
+              el.querySelector(".builder-size-readout").textContent=Math.round(nextSpan/24*100)+"% × "+(block.height?block.height+"px":"auto");
+            };
+            const finish=ev=>{
+              try{handle.releasePointerCapture(ev.pointerId)}catch(err){}
+              handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
+              el.draggable=true;el.classList.remove("resizing");builderRenderInspector();
+            };
+            handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
+          };
+        });
         grid.appendChild(el);grid.appendChild(zone(i+1));
       });
 
@@ -3049,8 +3090,8 @@
       const host=document.getElementById("builder-inspector"); if(!host)return;
       const block=builderPage().blocks.find(x=>x.id===builderSelected);
       if(!block){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
-      const span=builderSpan(block);
-      const widthHtml='<div class="inspector-field"><label>Ширина блока</label><div class="builder-width-options">'+[[3,"25%"],[4,"33%"],[6,"50%"],[8,"66%"],[9,"75%"],[12,"100%"]].map(([s,l])=>'<button type="button" class="builder-width-btn'+(span===s?" active":"")+'" data-span="'+s+'">'+l+'</button>').join("")+'</div><p class="builder-note">Можно также потянуть за правый край выбранного блока.</p></div>';
+      const span=builderSpan(block),height=builderHeight(block);
+      const widthHtml='<div class="inspector-field"><label>Ширина блока</label><div class="builder-width-options">'+[[6,"25%"],[8,"33%"],[12,"50%"],[16,"66%"],[18,"75%"],[24,"100%"]].map(([s,l])=>'<button type="button" class="builder-width-btn'+(span===s?" active":"")+'" data-span="'+s+'">'+l+'</button>').join("")+'</div><p class="builder-note">Сетка теперь состоит из 24 сегментов. За края можно менять одну сторону, за уголки - ширину и высоту одновременно.</p></div><div class="inspector-field"><label>Высота блока</label><div class="builder-height-row"><input id="builder-height-input" type="number" min="48" step="1" value="'+(height||"")+'" placeholder="Авто"><button class="builder-mini" id="builder-height-auto" type="button">Авто</button></div></div>';
       let body="";
       if(["divider","spacer","price-calculator","saved-widget","site-menu"].includes(block.type)){
         const name=block.type==="price-calculator"?"Калькулятор стоимости":block.type==="saved-widget"?(block.title||"Сохранённый виджет"):block.type==="site-menu"?"Переключение страниц":block.type==="divider"?"Разделитель":"Пустое пространство";
@@ -3060,6 +3101,8 @@
       }
       host.innerHTML=body+widthHtml;
       host.querySelectorAll("[data-span]").forEach(btn=>btn.onclick=()=>builderSetSpan(block,+btn.dataset.span));
+      const hi=document.getElementById("builder-height-input");if(hi)hi.onchange=()=>{block.height=hi.value?Math.max(48,+hi.value):null;builderRenderCanvas();builderRenderInspector()};
+      const ha=document.getElementById("builder-height-auto");if(ha)ha.onclick=()=>{block.height=null;builderRenderCanvas();builderRenderInspector()};
       const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
       if(t)t.oninput=()=>{block.title=t.value;builderRenderCanvas()};
       if(x)x.oninput=()=>{block.text=x.value;builderRenderCanvas()};
@@ -3090,7 +3133,7 @@
     }
 
     function builderInsertWidget(w,atIndex=null){
-      const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:12};
+      const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:24,gridVersion:24};
       const blocks=builderPage().blocks;
       if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
       builderSelected=block.id;builderRender();
@@ -3116,7 +3159,7 @@
     builderLoad();
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>btn.addEventListener("click",()=>{
-      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:"",span:12};
+      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:"",span:24,gridVersion:24};
       if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
       if(type==="image")b.title="Изображение";
       if(type==="button"){b.title="Кнопка";b.text="Открыть"}
