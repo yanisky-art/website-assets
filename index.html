@@ -1224,10 +1224,11 @@
     const STORAGE_KEY =
       "myWebsiteWidgets";
 
-    const EDITOR_QUERY = new URLSearchParams(window.location.search).get("editor");
-    if (!EDITOR_QUERY) {
-      document.body.classList.add("builder-mode");
-    }
+    const URL_PARAMS = new URLSearchParams(window.location.search);
+    const EDITOR_QUERY = URL_PARAMS.get("editor");
+    const PREVIEW_MODE = URL_PARAMS.get("preview") === "1";
+    if (PREVIEW_MODE) document.body.classList.add("builder-preview-mode");
+    else if (!EDITOR_QUERY) document.body.classList.add("builder-mode");
 
     const MAX_NOTEBOOK_PAGES =
       200;
@@ -3229,16 +3230,19 @@
       const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
       builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[]});builderState.currentPage=id;builderSelected=null;builderRender();
     });
-    builderRender();
+    const requestedPage=URL_PARAMS.get("page");
+    if(requestedPage && builderState.pages.some(p=>p.id===requestedPage)) builderState.currentPage=requestedPage;
+    if(PREVIEW_MODE) builderRenderPreview();
+    else builderRender();
 
 
     /* ===================================== */
     /* START                                 */
     /* ===================================== */
 
-    renderWidgets();
+    if (!PREVIEW_MODE) renderWidgets();
 
-    if (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool") {
+    if (!PREVIEW_MODE && (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool")) {
       document.body.classList.remove("builder-mode");
       openTab(EDITOR_QUERY);
     }
