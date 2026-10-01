@@ -720,6 +720,29 @@
       body.builder-mode .builder-shell{grid-template-columns:190px 230px minmax(430px,1fr) 240px}
     }
 
+    /* PAGE BUILDER V3 - grid, drop zones and resize handles */
+    .builder-canvas{padding:12px;box-sizing:border-box;overflow:visible}
+    .builder-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start}
+    .page-block{grid-column:span var(--builder-span,12);min-width:0;border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box}
+    .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff}
+    .builder-insert-zone{grid-column:1/-1;height:12px;border-radius:999px;position:relative;transition:.12s ease}
+    .builder-insert-zone::after{content:"";position:absolute;left:8px;right:8px;top:5px;height:2px;background:transparent;border-radius:999px}
+    .builder-insert-zone.active{height:28px;background:rgba(111,140,255,.08)}
+    .builder-insert-zone.active::after{background:#6f8cff}
+    .builder-resize-handle{position:absolute;top:50%;right:-6px;width:12px;height:46px;transform:translateY(-50%);cursor:ew-resize;z-index:8;display:none}
+    .builder-resize-handle::after{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;border-radius:2px;background:#6f8cff}
+    .page-block.selected .builder-resize-handle{display:block}
+    .builder-width-readout{position:absolute;right:8px;bottom:6px;font-size:10px;padding:3px 6px;border-radius:999px;background:#6f8cff;color:white;display:none;z-index:9}
+    .page-block.resizing .builder-width-readout{display:block}
+    .builder-width-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}
+    .builder-width-btn{appearance:none;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;padding:7px 4px;font:inherit;font-size:11px;cursor:pointer}
+    .builder-width-btn.active{background:#222;color:#fff;border-color:#222}
+    .builder-canvas.mobile .page-block{grid-column:1/-1!important}
+    @media(prefers-color-scheme:dark){
+      .page-block:hover{border-color:#444}.page-block.selected{border-color:#6f8cff}
+      .builder-width-btn{border-color:#555}.builder-width-btn.active{background:#fff;color:#191919;border-color:#fff}
+    }
+
   </style>
 </head>
 
@@ -2967,37 +2990,80 @@
       return '<p class="block-text">Блок</p>';
     }
 
+    function builderSpan(b){const n=Number(b.span||12);return [3,4,6,8,9,12].includes(n)?n:12}
+    function builderSetSpan(block,span){block.span=Math.max(3,Math.min(12,span));builderRenderCanvas();builderRenderInspector()}
+
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
       const page=builderPage(); canvas.innerHTML="";
-      if(!page.blocks.length){canvas.innerHTML='<div class="builder-empty">Страница пока пустая.<br>Добавь первый блок слева.</div>';return}
-      page.blocks.forEach((b,i)=>{
-        const el=document.createElement("div"); el.className="page-block"+(builderSelected===b.id?" selected":""); el.draggable=true; el.dataset.id=b.id;
-        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+b.id+'" type="button">×</button></div>'+builderBlockMarkup(b);
-        el.onclick=e=>{if(e.target.closest(".page-block-tools"))return;builderSelected=b.id;builderRenderCanvas();builderRenderInspector()};
-        el.ondragstart=e=>{el.classList.add("dragging");e.dataTransfer.setData("text/plain",b.id)};
+      const grid=document.createElement("div");grid.className="builder-grid";canvas.appendChild(grid);
+
+      function zone(index){
+        const z=document.createElement("div");z.className="builder-insert-zone";z.dataset.index=index;
+        z.ondragover=e=>{e.preventDefault();e.stopPropagation();z.classList.add("active")};
+        z.ondragleave=()=>z.classList.remove("active");
+        z.ondrop=e=>{
+          e.preventDefault();e.stopPropagation();z.classList.remove("active");
+          const raw=e.dataTransfer.getData("application/json");
+          if(raw){try{const data=JSON.parse(raw);if(data.kind==="widget"){builderInsertWidget(data.widget,index);return}}catch(err){}}
+          const from=e.dataTransfer.getData("text/plain");if(!from)return;
+          const old=page.blocks.findIndex(x=>x.id===from);if(old<0)return;
+          const [m]=page.blocks.splice(old,1);let target=index;if(old<index)target--;page.blocks.splice(Math.max(0,target),0,m);builderRenderCanvas();
+        };
+        return z;
+      }
+
+      if(!page.blocks.length){
+        const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
+        empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
+        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0)}catch(err){}}};
+        grid.appendChild(empty);return;
+      }
+
+      grid.appendChild(zone(0));
+      page.blocks.forEach((block,i)=>{
+        if(!block.span)block.span=12;
+        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"");el.draggable=true;el.dataset.id=block.id;el.style.setProperty("--builder-span",builderSpan(block));
+        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+'<div class="builder-resize-handle" title="Изменить ширину"></div><div class="builder-width-readout">'+Math.round(builderSpan(block)/12*100)+'%</div>';
+        el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderRenderCanvas();builderRenderInspector()};
+        el.ondragstart=e=>{if(el.classList.contains("resizing")){e.preventDefault();return}el.classList.add("dragging");e.dataTransfer.setData("text/plain",block.id)};
         el.ondragend=()=>el.classList.remove("dragging");
-        el.ondragover=e=>e.preventDefault();
-        el.ondrop=e=>{e.preventDefault();const from=e.dataTransfer.getData("text/plain"),to=b.id;if(from===to)return;const a=page.blocks.findIndex(x=>x.id===from),z=page.blocks.findIndex(x=>x.id===to);const [m]=page.blocks.splice(a,1);page.blocks.splice(z,0,m);builderRenderCanvas()};
-        canvas.appendChild(el);
+
+        const handle=el.querySelector(".builder-resize-handle");
+        handle.onmousedown=e=>{
+          e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("resizing");
+          const rect=grid.getBoundingClientRect(),start=e.clientX,startSpan=builderSpan(block),col=rect.width/12;
+          const move=ev=>{const delta=Math.round((ev.clientX-start)/col);const raw=Math.max(3,Math.min(12,startSpan+delta));const snaps=[3,4,6,8,9,12];const snap=snaps.reduce((p,n)=>Math.abs(n-raw)<Math.abs(p-raw)?n:p,snaps[0]);block.span=snap;el.style.setProperty("--builder-span",snap);el.querySelector(".builder-width-readout").textContent=Math.round(snap/12*100)+"%"};
+          const up=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);el.draggable=true;el.classList.remove("resizing");builderRenderInspector()};
+          document.addEventListener("mousemove",move);document.addEventListener("mouseup",up);
+        };
+        grid.appendChild(el);grid.appendChild(zone(i+1));
       });
-      canvas.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>{page.blocks=page.blocks.filter(b=>b.id!==x.dataset.delete);if(builderSelected===x.dataset.delete)builderSelected=null;builderRenderCanvas();builderRenderInspector()});
-      canvas.querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>{const i=+x.dataset.up;if(i>0){[page.blocks[i-1],page.blocks[i]]=[page.blocks[i],page.blocks[i-1]];builderRenderCanvas()}});
-      canvas.querySelectorAll("[data-down]").forEach(x=>x.onclick=()=>{const i=+x.dataset.down;if(i<page.blocks.length-1){[page.blocks[i+1],page.blocks[i]]=[page.blocks[i],page.blocks[i+1]];builderRenderCanvas()}});
+
+      grid.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>{page.blocks=page.blocks.filter(b=>b.id!==x.dataset.delete);if(builderSelected===x.dataset.delete)builderSelected=null;builderRenderCanvas();builderRenderInspector()});
+      grid.querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>{const i=+x.dataset.up;if(i>0){[page.blocks[i-1],page.blocks[i]]=[page.blocks[i],page.blocks[i-1]];builderRenderCanvas()}});
+      grid.querySelectorAll("[data-down]").forEach(x=>x.onclick=()=>{const i=+x.dataset.down;if(i<page.blocks.length-1){[page.blocks[i+1],page.blocks[i]]=[page.blocks[i],page.blocks[i+1]];builderRenderCanvas()}});
     }
 
     function builderRenderInspector(){
       const host=document.getElementById("builder-inspector"); if(!host)return;
-      const b=builderPage().blocks.find(x=>x.id===builderSelected);
-      if(!b){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
-      if(["divider","spacer","price-calculator","saved-widget","site-menu"].includes(b.type)){
-        host.innerHTML='<p><strong>'+builderEsc(b.type==="price-calculator"?"Калькулятор стоимости":b.type==="saved-widget"?(b.title||"Сохранённый виджет"):b.type==="site-menu"?"Переключение страниц":b.type==="divider"?"Разделитель":"Пустое пространство")+'</strong></p><p class="builder-note">Для этого блока настройки появятся на следующем этапе.</p>';return;
+      const block=builderPage().blocks.find(x=>x.id===builderSelected);
+      if(!block){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
+      const span=builderSpan(block);
+      const widthHtml='<div class="inspector-field"><label>Ширина блока</label><div class="builder-width-options">'+[[3,"25%"],[4,"33%"],[6,"50%"],[8,"66%"],[9,"75%"],[12,"100%"]].map(([s,l])=>'<button type="button" class="builder-width-btn'+(span===s?" active":"")+'" data-span="'+s+'">'+l+'</button>').join("")+'</div><p class="builder-note">Можно также потянуть за правый край выбранного блока.</p></div>';
+      let body="";
+      if(["divider","spacer","price-calculator","saved-widget","site-menu"].includes(block.type)){
+        const name=block.type==="price-calculator"?"Калькулятор стоимости":block.type==="saved-widget"?(block.title||"Сохранённый виджет"):block.type==="site-menu"?"Переключение страниц":block.type==="divider"?"Разделитель":"Пустое пространство";
+        body='<p><strong>'+builderEsc(name)+'</strong></p>';
+      }else{
+        body='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(block.title||"")+'</textarea></div><div class="inspector-field"><label>'+(block.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(block.text||"")+'</textarea></div>';
       }
-      host.innerHTML='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(b.title||"")+'</textarea></div><div class="inspector-field"><label>'+(b.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(b.text||"")+'</textarea></div>';
+      host.innerHTML=body+widthHtml;
+      host.querySelectorAll("[data-span]").forEach(btn=>btn.onclick=()=>builderSetSpan(block,+btn.dataset.span));
       const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
-      t.oninput=()=>{b.title=t.value;builderRenderCanvas()}; x.oninput=()=>{b.text=x.value;builderRenderCanvas()};
+      if(t)t.oninput=()=>{block.title=t.value;builderRenderCanvas()};
+      if(x)x.oninput=()=>{block.text=x.value;builderRenderCanvas()};
     }
-
 
     function builderSavedWidgets(){
       const host=document.getElementById("builder-saved-widgets"); if(!host)return;
@@ -3024,7 +3090,7 @@
     }
 
     function builderInsertWidget(w,atIndex=null){
-      const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||""};
+      const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:12};
       const blocks=builderPage().blocks;
       if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
       builderSelected=block.id;builderRender();
@@ -3050,7 +3116,7 @@
     builderLoad();
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>btn.addEventListener("click",()=>{
-      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:""};
+      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:"",span:12};
       if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
       if(type==="image")b.title="Изображение";
       if(type==="button"){b.title="Кнопка";b.text="Открыть"}
