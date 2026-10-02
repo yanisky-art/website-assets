@@ -3012,10 +3012,14 @@
       if(verticalDistance>Math.max(4,moving.gridH*.65)&&horizontalCenterDistance>Math.max(2,aw*.35))return null;
 
       let insert=0;while(insert<col.length&&my>col[insert].gridY+col[insert].gridH/2)insert++;
-      const GAP=1,totalCount=col.length+1;\n      const top=Math.min(...col.map(o=>o.gridY)),bottom=Math.max(...col.map(o=>o.gridY+o.gridH));\n      const footprint=Math.max(18,bottom-top);\n      const desiredH=Math.max(3,Math.min(moving.gridH,10,Math.floor((footprint-GAP*(totalCount-1))/totalCount)));
+      const GAP=1,totalCount=col.length+1;
+      const top=Math.min(...col.map(o=>o.gridY)),bottom=Math.max(...col.map(o=>o.gridY+o.gridH));
+      const footprint=Math.max(18,bottom-top);
+      const desiredH=Math.max(3,Math.min(moving.gridH,10,Math.floor((footprint-GAP*(totalCount-1))/totalCount)));
       // Keep the column's current x/width. New widget uses the narrower of its own width and column width.
       const slotW=Math.max(2,Math.min(moving.gridW,aw)),slotX=Math.max(1,Math.min(BUILDER_COLS-slotW+1,Math.round(anchor.gridX+(aw-slotW)/2)));
-      let y=top;const placements=[];\n      const fitH=Math.max(3,Math.floor((footprint-GAP*(totalCount-1))/totalCount));
+      let y=top;const placements=[];
+      const fitH=Math.max(3,Math.floor((footprint-GAP*(totalCount-1))/totalCount));
       for(let i=0;i<=col.length;i++){
         if(i===insert){placements.push({id:moving.id,x:slotX,y,w:slotW,h:desiredH,isMoving:true});y+=desiredH+GAP}
         if(i<col.length){const o=col[i],h=Math.min(o.gridH,fitH),ratio=h/Math.max(1,o.gridH),w=Math.max(2,Math.round(o.gridW*ratio)),x=Math.max(1,Math.min(BUILDER_COLS-w+1,Math.round(ax+(aw-w)/2)));placements.push({id:o.id,x,y,w,h});y+=h+GAP}
