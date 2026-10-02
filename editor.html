@@ -772,7 +772,7 @@
     .builder-canvas{padding:12px;box-sizing:border-box;overflow:visible}
     .builder-grid{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:6px;align-items:start}
     .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:visible;transform:translate(var(--builder-offset-x,0px),var(--builder-offset-y,0px))}
-    .page-block:hover{border-color:#ddd}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
+    .page-block:hover{border-color:#ddd;cursor:grab}.page-block.dragging{cursor:grabbing}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
     .page-block.resizing{user-select:none;transition:none!important}
     .page-block.resizing iframe{pointer-events:none}.page-block.drag-docking iframe{pointer-events:none}.builder-canvas.external-widget-drag .page-block iframe{pointer-events:none}body.builder-pointer-drag{user-select:none}body.builder-pointer-drag .page-block iframe{pointer-events:none}
     .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
@@ -819,7 +819,7 @@
       /* PAGE BUILDER V5 - free 2D grid */
     .builder-grid{display:grid!important;grid-template-columns:repeat(24,minmax(0,1fr))!important;grid-auto-rows:24px!important;gap:6px!important;align-items:stretch!important;position:relative!important}
     .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
-    .page-block .block-widget-frame{height:100%!important;min-height:0!important}
+    .page-block .block-widget-frame{height:100%!important;min-height:0!important;user-select:none}.page-block iframe.block-widget-frame{pointer-events:none}.page-block.selected iframe.block-widget-frame{pointer-events:none}
     .builder-insert-zone{display:none!important}
     .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.055) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
     .builder-smart-guide{position:absolute;z-index:60;pointer-events:none;background:#8aa0ff;box-shadow:0 0 0 1px rgba(138,160,255,.15)}
@@ -827,6 +827,8 @@
     .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
     .builder-dock-preview{position:absolute;z-index:55;pointer-events:none;border:2px dashed #8aa0ff;background:rgba(111,140,255,.10);border-radius:8px;box-sizing:border-box}
     .builder-row-preview{position:absolute;z-index:54;pointer-events:none;border:2px solid #8aa0ff;background:rgba(111,140,255,.07);border-radius:8px;box-sizing:border-box}
+    .builder-drag-ghost{position:fixed;z-index:100000;pointer-events:none;opacity:.78;transform:translate(-50%,-50%);border:1px solid #8aa0ff;border-radius:8px;background:#171717;box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden}
+    .builder-drag-ghost img{display:block;width:100%;height:100%;object-fit:contain}
 </style>
 </head>
 
@@ -3224,20 +3226,34 @@
         const payload={kind:"widget",widget:{type:w.type,name:w.name||"Widget",url:w.url||"",system:!!w.system}};
         card.onpointerdown=e=>{
           if(e.button!==0)return;e.preventDefault();
-          const startX=e.clientX,startY=e.clientY;let active=false;
-          const move=ev=>{if(!active&&Math.hypot(ev.clientX-startX,ev.clientY-startY)<7)return;if(!active){active=true;document.body.classList.add("builder-pointer-drag")} };
-          const up=ev=>{
-            window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);document.body.classList.remove("builder-pointer-drag");
-            if(!active)return;
+          const startX=e.clientX,startY=e.clientY;let active=false,ghost=null,rowPlan=null,incoming=null;
+          const move=ev=>{
+            if(!active&&Math.hypot(ev.clientX-startX,ev.clientY-startY)<7)return;
+            if(!active){
+              active=true;document.body.classList.add("builder-pointer-drag");
+              incoming=builderMakeWidgetBlock(payload.widget);builderGridNormalize(incoming);
+              ghost=document.createElement("div");ghost.className="builder-drag-ghost";ghost.style.width="110px";ghost.style.height="80px";
+              const source=card.querySelector("img");if(source){const im=source.cloneNode();ghost.appendChild(im)}else ghost.textContent=payload.widget.name||"Widget";
+              document.body.appendChild(ghost);
+            }
+            ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
             const grid=document.querySelector("#builder-canvas .builder-grid");if(!grid)return;
+            const r=grid.getBoundingClientRect();grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());
+            if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom){rowPlan=null;return}
+            const p=builderPage();builderGridMigrate(p),col=(r.width-23*6)/24;
+            incoming.gridX=Math.max(1,Math.min(BUILDER_COLS-incoming.gridW+1,Math.round((ev.clientX-r.left)/(col+6))+1-Math.floor(incoming.gridW/2)));
+            incoming.gridY=Math.max(1,Math.round((ev.clientY-r.top)/BUILDER_ROW_PX)+1-Math.floor(incoming.gridH/2));
+            rowPlan=builderAutoRowPlan(p,incoming,incoming.gridX,incoming.gridY);builderShowRowPlan(grid,rowPlan);
+          };
+          const up=ev=>{
+            window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);document.body.classList.remove("builder-pointer-drag");ghost?.remove();
+            const grid=document.querySelector("#builder-canvas .builder-grid");grid?.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());
+            if(!active||!grid||!incoming)return;
             const r=grid.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)return;
-            const p=builderPage();builderGridMigrate(p);const incoming=builderMakeWidgetBlock(payload.widget);builderGridNormalize(incoming);
-            const col=(r.width-23*6)/24;
-            const x=Math.round((ev.clientX-r.left)/(col+6))+1-Math.floor(incoming.gridW/2);
-            const y=Math.round((ev.clientY-r.top)/BUILDER_ROW_PX)+1-Math.floor(incoming.gridH/2);
-            incoming.gridX=Math.max(1,Math.min(BUILDER_COLS-incoming.gridW+1,x));incoming.gridY=Math.max(1,y);
-            const free=builderNearestFreeForBlock(p,incoming,incoming.gridX,incoming.gridY);incoming.gridX=free.x;incoming.gridY=free.y;
-            p.blocks.push(incoming);builderSelected=incoming.id;builderSelectedFolder=null;builderRender();builderHistoryCommit();
+            const p=builderPage();builderGridMigrate(p);
+            p.blocks.push(incoming);
+            if(rowPlan)builderApplyRowPlan(p,rowPlan);else{const free=builderNearestFreeForBlock(p,incoming,incoming.gridX,incoming.gridY);incoming.gridX=free.x;incoming.gridY=free.y}
+            builderSelected=incoming.id;builderSelectedFolder=null;builderRender();builderHistoryCommit();
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
         };
