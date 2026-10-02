@@ -772,7 +772,10 @@
     .builder-canvas{padding:12px;box-sizing:border-box;overflow:visible}
     .builder-grid{display:grid;grid-template-columns:repeat(24,minmax(0,1fr));gap:6px;align-items:start}
     .page-block{grid-column:span var(--builder-span,24);min-width:0;min-height:48px;height:var(--builder-height,auto);border:1px solid transparent;border-radius:8px;border-bottom:0;padding:24px;box-sizing:border-box;position:relative;overflow:visible;transform:translate(var(--builder-offset-x,0px),var(--builder-offset-y,0px))}
-    .page-block:hover{border-color:#ddd}.page-block.builder-drop-target{outline:2px dashed #6f8cff;outline-offset:-4px}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
+    .page-block:hover{border-color:#ddd}.page-block.builder-drop-target{outline:2px dashed #6f8cff;outline-offset:-4px}
+    .page-block.builder-drop-target::before{content:"";position:absolute;z-index:18;top:0;bottom:0;width:50%;background:rgba(111,140,255,.12);pointer-events:none}
+    .page-block.builder-drop-target[data-drop-side="left"]::before{left:0}
+    .page-block.builder-drop-target[data-drop-side="right"]::before{right:0}.page-block.selected{border-color:#6f8cff;box-shadow:0 0 0 1px rgba(111,140,255,.22)}
     .page-block.resizing{user-select:none;transition:none!important}
     .page-block.resizing iframe{pointer-events:none}
     .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
@@ -2924,17 +2927,39 @@
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
-        el.ondragover=e=>{e.preventDefault();e.stopPropagation();el.classList.add("builder-drop-target")};
-        el.ondragleave=e=>{if(!el.contains(e.relatedTarget))el.classList.remove("builder-drop-target")};
+        el.ondragover=e=>{
+          e.preventDefault();e.stopPropagation();
+          const rect=el.getBoundingClientRect(),side=e.clientX<rect.left+rect.width/2?"left":"right";
+          el.classList.add("builder-drop-target");el.dataset.dropSide=side;
+        };
+        el.ondragleave=e=>{if(!el.contains(e.relatedTarget)){el.classList.remove("builder-drop-target");delete el.dataset.dropSide}};
         el.ondrop=e=>{
           e.preventDefault();e.stopPropagation();el.classList.remove("builder-drop-target");
-          const rect=el.getBoundingClientRect(),after=e.clientX>rect.left+rect.width/2;
-          let index=page.blocks.findIndex(x=>x.id===block.id)+(after?1:0);
+          const rect=el.getBoundingClientRect(),side=e.clientX<rect.left+rect.width/2?"left":"right";
+          let targetIndex=page.blocks.findIndex(x=>x.id===block.id);
           const raw=e.dataTransfer.getData("application/json");
-          if(raw){try{const data=JSON.parse(raw);if(data.kind==="widget"){builderInsertWidget(data.widget,index);return}if(data.kind==="block"){builderInsertBlock(data.type,index);return}}catch(err){}}
-          const from=e.dataTransfer.getData("text/plain");if(!from||from===block.id)return;
-          const old=page.blocks.findIndex(x=>x.id===from);if(old<0)return;
-          const [m]=page.blocks.splice(old,1);if(old<index)index--;page.blocks.splice(Math.max(0,index),0,m);builderRender();builderHistoryCommit();
+          let incoming=null;
+          if(raw){try{
+            const data=JSON.parse(raw);
+            if(data.kind==="widget")incoming=builderMakeWidgetBlock(data.widget);
+            if(data.kind==="block")incoming=builderMakeBlock(data.type);
+          }catch(err){}}
+          const from=e.dataTransfer.getData("text/plain");
+          if(!incoming&&from){
+            if(from===block.id)return;
+            const oldIndex=page.blocks.findIndex(x=>x.id===from);if(oldIndex<0)return;
+            [incoming]=page.blocks.splice(oldIndex,1);
+            targetIndex=page.blocks.findIndex(x=>x.id===block.id);
+          }
+          if(!incoming)return;
+          // Side-by-side docking: dropping on the left/right half of another
+          // block makes both blocks share one row automatically.
+          block.span=12;block.gridVersion=24;
+          incoming.span=12;incoming.gridVersion=24;
+          targetIndex=page.blocks.findIndex(x=>x.id===block.id);
+          page.blocks.splice(side==="left"?targetIndex:targetIndex+1,0,incoming);
+          builderSelected=incoming.id;builderSelectedFolder=null;
+          builderRender();builderHistoryCommit();
         };
         el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
         el.oncontextmenu=e=>{
