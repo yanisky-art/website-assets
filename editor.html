@@ -3616,7 +3616,15 @@
         localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState));
         const sourceGrid=document.querySelector(".builder-grid");
         const sourceWidth=sourceGrid?.getBoundingClientRect().width||0;
-        if(sourceWidth>0)localStorage.setItem("yaniskyPreviewSourceWidth",String(sourceWidth));
+        if(sourceWidth>0){
+          localStorage.setItem("yaniskyPreviewSourceWidth",String(sourceWidth));
+          const geometry={};
+          sourceGrid.querySelectorAll(".page-block[data-id]").forEach(el=>{
+            const r=el.getBoundingClientRect();
+            geometry[el.dataset.id]={width:r.width,height:r.height};
+          });
+          localStorage.setItem("yaniskyPreviewBlockGeometry",JSON.stringify(geometry));
+        }
       }
       catch(err){alert("Не удалось подготовить предпросмотр.");return}
       const u=new URL("./preview.html",window.location.href);
