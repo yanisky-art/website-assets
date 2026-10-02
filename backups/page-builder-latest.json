@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "savedAt": "2026-10-02T03:41:44.553Z",
+  "pageBuilder": {
+    "currentPage": "home",
+    "pages": [
+      {
+        "id": "home",
+        "name": "HOME",
+        "blocks": [
+          {
+            "id": "bmuqa00et90vd",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 105
+          },
+          {
+            "id": "bmuqa128q2qqp",
+            "type": "saved-widget",
+            "title": "Black Sketchbook",
+            "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_01.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_02.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_03.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_04.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_05.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_06.png",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 419
+          },
+          {
+            "id": "bmuqa1cg2nef8",
+            "type": "saved-widget",
+            "title": "green_sketchbook_00.png",
+            "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_00.png&link=https%3A%2F%2Fyanisky-art.github.io%2Fwebsite-assets%2Fnotebook%2F%3Fpages%3Dassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_01.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_02.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_03.png",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 461
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "about",
+        "name": "ABOUT",
+        "blocks": [
+          {
+            "id": "bmuqaurfucdsc",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "traditional",
+        "name": "TRADITIONAL",
+        "blocks": [
+          {
+            "id": "bmuqauvsa23cv",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "digital",
+        "name": "DIGITAL",
+        "blocks": [
+          {
+            "id": "bmuqauxob3vpy",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "mixed-media",
+        "name": "MIXED MEDIA",
+        "blocks": [
+          {
+            "id": "bmuqauznueezt",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "projects",
+        "name": "PROJECTS",
+        "blocks": [
+          {
+            "id": "bmuqav1lmq9ck",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "events",
+        "name": "EVENTS",
+        "blocks": [
+          {
+            "id": "bmuqav3iy5p8x",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      },
+      {
+        "id": "contact",
+        "name": "CONTACT",
+        "blocks": [
+          {
+            "id": "bmuqav5juzlg5",
+            "type": "site-menu",
+            "title": "",
+            "text": "",
+            "span": 24,
+            "gridVersion": 24,
+            "visible": true,
+            "locked": false,
+            "opacity": 100,
+            "deviceVisibility": {
+              "desktop": true,
+              "tablet": true,
+              "mobile": true
+            },
+            "height": 77,
+            "layerName": "Меню"
+          }
+        ],
+        "folders": []
+      }
+    ]
+  },
+  "savedWidgets": [
+    {
+      "type": "notebook",
+      "name": "Green Sketchbook",
+      "folder": "assets/notebooks/green_sketchbook/",
+      "prefix": "green_sketchbook",
+      "pages": 3,
+      "cover": "assets/notebooks/green_sketchbook/green_sketchbook_00.png",
+      "preview": "assets/notebooks/green_sketchbook/green_sketchbook_00.png",
+      "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_01.png%2Cassets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_02.png%2Cassets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_03.png"
+    },
+    {
+      "type": "notebook",
+      "name": "Black Sketchbook",
+      "folder": "assets/notebooks/black_sketchbook/",
+      "prefix": "black_sketchbook",
+      "pages": 6,
+      "cover": "assets/notebooks/black_sketchbook/black_sketchbook_00.png",
+      "preview": "assets/notebooks/black_sketchbook/black_sketchbook_00.png",
+      "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_01.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_02.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_03.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_04.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_05.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_06.png"
+    },
+    {
+      "type": "button",
+      "name": "Frisk_01.png",
+      "image": "assets/png/Frisk_01.png",
+      "preview": "assets/png/Frisk_01.png",
+      "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fpng%2FFrisk_01.png&link=https%3A%2F%2Fwww.instagram.com%2Fp%2FBTNSrpGBE12%2F"
+    },
+    {
+      "type": "button",
+      "name": "black_sketchbook_00.png",
+      "image": "assets/notebooks/black_sketchbook/black_sketchbook_00.png",
+      "preview": "assets/notebooks/black_sketchbook/black_sketchbook_00.png",
+      "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_00.png&link=https%3A%2F%2Fyanisky-art.github.io%2Fwebsite-assets%2Fnotebook%2F%3Fpages%3Dassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_01.png%252Cassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_02.png%252Cassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_03.png%252Cassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_04.png%252Cassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_05.png%252Cassets%252Fnotebooks%252Fblack_sketchbook%252Fblack_sketchbook_06.png"
+    },
+    {
+      "type": "button",
+      "name": "green_sketchbook_00.png",
+      "image": "assets/notebooks/green_sketchbook/green_sketchbook_00.png",
+      "preview": "assets/notebooks/green_sketchbook/green_sketchbook_00.png",
+      "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_00.png&link=https%3A%2F%2Fyanisky-art.github.io%2Fwebsite-assets%2Fnotebook%2F%3Fpages%3Dassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_01.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_02.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_03.png"
+    }
+  ]
+}
