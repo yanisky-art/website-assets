@@ -874,6 +874,7 @@
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
               <a class="builder-mini" id="builder-preview" href="./preview.html?page=home" target="_blank" rel="noopener" style="text-decoration:none">Предпросмотр ↗</a>
               <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
+              <button class="builder-mini" id="builder-backup" type="button" title="Сохранить резервную копию страниц и виджетов в GitHub">Резервная копия</button>
               <button class="builder-mini" id="builder-publish" type="button" title="Опубликовать текущий черновик на публичном сайте">Опубликовать</button>
             </div>
           </div>
@@ -2738,10 +2739,39 @@
       localStorage.setItem(PAGE_BUILDER_KEY,next);
       return true;
     }
+    async function builderGitHubWrite(path,payload,message,token){
+      const api="https://api.github.com/repos/yanisky-art/website-assets/contents/"+path;
+      const headers={Accept:"application/vnd.github+json",Authorization:"Bearer "+token.trim(),"X-GitHub-Api-Version":"2022-11-28"};
+      const current=await fetch(api,{headers});
+      let sha=null;
+      if(current.ok){const info=await current.json();sha=info.sha}
+      else if(current.status!==404) throw new Error("GitHub не принял токен ("+current.status+")");
+      const json=JSON.stringify(payload,null,2),bytes=new TextEncoder().encode(json);let binary="";bytes.forEach(b=>binary+=String.fromCharCode(b));
+      const body={message,content:btoa(binary),branch:"main"};if(sha)body.sha=sha;
+      const res=await fetch(api,{method:"PUT",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!res.ok)throw new Error("Ошибка записи GitHub ("+res.status+")");
+      return res.json();
+    }
+    function builderGetPublishToken(){
+      let token=sessionStorage.getItem("yaniskyGitHubPublishToken")||"";
+      if(!token){token=prompt("Нужен GitHub Personal Access Token с правом записи в репозиторий website-assets. Токен хранится только в этой вкладке браузера.")||"";if(token)sessionStorage.setItem("yaniskyGitHubPublishToken",token.trim())}
+      return token.trim();
+    }
+    async function builderBackup(button){
+      if(!builderState?.pages?.length)return;
+      const token=builderGetPublishToken();if(!token)return;
+      const old=button.textContent;button.disabled=true;button.textContent="Копирование…";
+      try{
+        const payload={version:1,savedAt:new Date().toISOString(),pageBuilder:structuredClone(builderState),savedWidgets:getWidgets()};
+        await builderGitHubWrite("backups/page-builder-latest.json",payload,"Backup Page Builder project",token);
+        localStorage.setItem(PAGE_BUILDER_KEY+":recovery",JSON.stringify(builderState));
+        button.textContent="Копия сохранена ✓";setTimeout(()=>button.textContent=old,1800);
+      }catch(err){button.textContent="Ошибка";alert(err.message);setTimeout(()=>button.textContent=old,1800)}
+      finally{button.disabled=false}
+    }
     async function builderPublish(button){
       builderPersist();
-      let token=sessionStorage.getItem("yaniskyGitHubPublishToken")||"";
-      if(!token){token=prompt("Для публикации нужен GitHub Personal Access Token с правом записи в репозиторий website-assets. Токен сохранится только в этой вкладке браузера.");if(!token)return;sessionStorage.setItem("yaniskyGitHubPublishToken",token.trim())}
+      const token=builderGetPublishToken();if(!token)return;
       const old=button.textContent;button.disabled=true;button.textContent="Публикация…";
       try{
         const api="https://api.github.com/repos/yanisky-art/website-assets/contents/site-data.json";
@@ -3095,6 +3125,7 @@
     }));
     document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
     document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
+    document.getElementById("builder-backup")?.addEventListener("click",e=>builderBackup(e.currentTarget));
     document.getElementById("builder-publish")?.addEventListener("click",e=>builderPublish(e.currentTarget));
     document?.addEventListener("keydown",e=>{
       if(!document.body.classList.contains("builder-mode")||PREVIEW_MODE)return;
