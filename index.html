@@ -3298,11 +3298,14 @@
       const canvas=document.getElementById("builder-canvas");if(!canvas)return;
       canvas.ondragover=e=>{if(e.dataTransfer.types.includes("application/json")){e.preventDefault();canvas.classList.add("builder-drop-ready")}};
       canvas.ondragleave=e=>{if(!canvas.contains(e.relatedTarget))canvas.classList.remove("builder-drop-ready")};
-      canvas.addEventListener("drop",e=>{
+      canvas.ondrop=e=>{
+        // Insert zones and the empty-state have their own drop handlers.
+        // Do not let the canvas create a second copy of the same dragged block.
+        if(e.target.closest(".builder-insert-zone")||e.target.closest(".builder-empty"))return;
         const raw=e.dataTransfer.getData("application/json");if(!raw)return;
         e.preventDefault();e.stopPropagation();canvas.classList.remove("builder-drop-ready");
-        try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget);if(data.kind==="block")builderInsertBlock(data.type)}catch(err){}
-      });
+        try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget);else if(data.kind==="block")builderInsertBlock(data.type)}catch(err){}
+      };
     }
 
     function builderRenderPreview(){
