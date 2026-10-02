@@ -3382,8 +3382,13 @@
         builderRenderCanvas();
       }
     });
+    document.getElementById("builder-add-folder")?.addEventListener("click",()=>{
+      const p=builderPage();p.folders=p.folders||[];const selected=builderSelectedBlock();
+      p.folders.push({id:"g"+builderUid(),name:"Новая папка",collapsed:false,children:selected?[selected.id]:[]});
+      if(selected)p.folders.slice(0,-1).forEach(g=>g.children=(g.children||[]).filter(id=>id!==selected.id));
+      builderRenderLayers();builderHistoryCommit();
+    });
     document.getElementById("builder-add-page")?.addEventListener("click",()=>{
-    document.getElementById("builder-add-folder")?.addEventListener("click",()=>{const p=builderPage();p.folders=p.folders||[];const selected=builderSelectedBlock();p.folders.push({id:"g"+builderUid(),name:"Новая папка",collapsed:false,children:selected?[selected.id]:[]});if(selected)p.folders.slice(0,-1).forEach(g=>g.children=(g.children||[]).filter(id=>id!==selected.id));builderRenderLayers()});
       const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
       builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[]});builderState.currentPage=id;builderSelected=null;builderRender();
     });
