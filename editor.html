@@ -2732,7 +2732,7 @@
         try{const restored=recovery?JSON.parse(recovery):null;builderState=(restored&&Array.isArray(restored.pages)&&restored.pages.length)?restored:structuredClone(builderDefault)}
         catch(_){builderState=structuredClone(builderDefault)}
       }
-      if(!builderState.currentPage || !builderState.pages.some(p=>p.id===builderState.currentPage)) builderState.currentPage=builderState.pages[0].id;
+      builderState.currentPage=builderState.pages.some(p=>p.id==="home")?"home":builderState.pages[0].id;
     }
     function builderPage(){return builderState.pages.find(p=>p.id===builderState.currentPage)||builderState.pages[0]}
     let builderDraftDirty=false;
@@ -2890,6 +2890,24 @@
     }
     function builderSetSpan(block,span){block.span=Math.max(2,Math.min(24,Number(span)));block.gridVersion=24;builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
     function builderHeight(block){return block.height?Math.max(48,Number(block.height)):null}
+    function builderRowForBlock(page,block){
+      const rows=[];let row=[],sum=0;
+      page.blocks.forEach(b=>{const s=builderSpan(b);if(row.length&&sum+s>24){rows.push(row);row=[];sum=0}row.push(b);sum+=s;if(sum>=24){rows.push(row);row=[];sum=0}});
+      if(row.length)rows.push(row);
+      return rows.find(r=>r.some(b=>b.id===block.id))||[block];
+    }
+    function builderEqualizeRow(row){
+      const n=row.length;if(!n)return;
+      let left=24;
+      row.forEach((b,i)=>{const remain=n-i;const s=i===n-1?left:Math.max(2,Math.floor(left/remain));b.span=s;b.gridVersion=24;left-=s});
+    }
+    function builderRedistributeRow(page,block,newSpan){
+      const row=builderRowForBlock(page,block);if(row.length<2){block.span=Math.max(2,Math.min(24,newSpan));block.gridVersion=24;return}
+      const max=Math.max(2,24-2*(row.length-1));newSpan=Math.max(2,Math.min(max,newSpan));
+      block.span=newSpan;block.gridVersion=24;
+      const others=row.filter(b=>b.id!==block.id);let left=24-newSpan;
+      others.forEach((b,i)=>{const remain=others.length-i;const s=i===others.length-1?left:Math.max(2,Math.floor(left/remain));b.span=s;b.gridVersion=24;left-=s});
+    }
 
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
@@ -2956,10 +2974,10 @@
           if(!incoming)return;
           // Side-by-side docking: dropping on the left/right half of another
           // block makes both blocks share one row automatically.
-          block.span=12;block.gridVersion=24;
-          incoming.span=12;incoming.gridVersion=24;
           targetIndex=page.blocks.findIndex(x=>x.id===block.id);
+          const existingRow=builderRowForBlock(page,block);
           page.blocks.splice(side==="left"?targetIndex:targetIndex+1,0,incoming);
+          builderEqualizeRow([...existingRow,incoming]);
           builderSelected=incoming.id;builderSelectedFolder=null;
           builderRender();builderHistoryCommit();
         };
@@ -2989,7 +3007,9 @@
               if(dir.includes("s"))nextHeight=Math.round(startHeight+dy);
               if(dir.includes("n"))nextHeight=Math.round(startHeight-dy);
               nextSpan=Math.max(2,Math.min(24,nextSpan));nextHeight=Math.max(48,nextHeight);
-              block.span=nextSpan;block.gridVersion=24;
+              if(dir.includes("e")||dir.includes("w"))builderRedistributeRow(page,block,nextSpan);
+              else {block.span=nextSpan;block.gridVersion=24}
+              nextSpan=builderSpan(block);
               if(dir.includes("n")||dir.includes("s"))block.height=nextHeight;
 
               // CSS Grid normally anchors the block at top-left. For west/north
@@ -2998,6 +3018,7 @@
               if(dir.includes("w"))offsetX=(startSpan-nextSpan)*col;
               if(dir.includes("n"))offsetY=startHeight-nextHeight;
 
+              builderRowForBlock(page,block).forEach(rb=>{const rel=grid.querySelector('.page-block[data-id="'+rb.id+'"]');if(rel)rel.style.setProperty("--builder-span",builderSpan(rb))});
               el.style.setProperty("--builder-span",nextSpan);
               el.style.setProperty("--builder-offset-x",offsetX+"px");
               el.style.setProperty("--builder-offset-y",offsetY+"px");
@@ -3010,7 +3031,7 @@
               el.draggable=true;el.classList.remove("resizing");
               // Re-render after release so temporary north/west preview offsets
               // are cleared and the grid commits the new dimensions cleanly.
-              builderRenderCanvas();builderRenderInspector();
+              builderRenderCanvas();builderRenderInspector();builderHistoryCommit();
             };
             handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
@@ -3085,7 +3106,7 @@
             if(active&&target){
               ev.preventDefault();ev.stopPropagation();
               const targetId=target.dataset.id,p=builderPage(),idx=p.blocks.findIndex(x=>x.id===targetId),anchor=p.blocks[idx];
-              if(anchor){const incoming=builderMakeWidgetBlock(payload.widget);anchor.span=12;anchor.gridVersion=24;incoming.span=12;incoming.gridVersion=24;p.blocks.splice(side==="left"?idx:idx+1,0,incoming);builderSelected=incoming.id;builderSelectedFolder=null;clear();builderRender();builderHistoryCommit();return}
+              if(anchor){const incoming=builderMakeWidgetBlock(payload.widget),existingRow=builderRowForBlock(p,anchor);p.blocks.splice(side==="left"?idx:idx+1,0,incoming);builderEqualizeRow([...existingRow,incoming]);builderSelected=incoming.id;builderSelectedFolder=null;clear();builderRender();builderHistoryCommit();return}
             }
             clear();
           };
