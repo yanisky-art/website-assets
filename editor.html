@@ -2951,22 +2951,46 @@
         return centerY>=o.gridY-2&&centerY<=o.gridY+o.gridH+2;
       }).sort((a,b)=>a.gridX-b.gridX);
       if(!row.length)return null;
+
       const rowY=Math.min(wantY,...row.map(o=>o.gridY));
-      // Intent is determined only by cursor/drop x. This makes preview == final placement.
-      const centerX=wantX+moving.gridW/2;
+      const pointerCenter=wantX+moving.gridW/2;
       let insert=0;
-      while(insert<row.length && centerX>row[insert].gridX+row[insert].gridW/2)insert++;
-      // Keep the dragged block's width where possible; never silently move it elsewhere.
-      let desired=Math.max(2,Math.min(moving.gridW,BUILDER_COLS-2*row.length));
-      const minEach=2;
-      if(desired+row.length*minEach>BUILDER_COLS)desired=Math.max(2,BUILDER_COLS-row.length*minEach);
-      const widths=row.map(o=>o.gridW),need=Math.max(0,widths.reduce((a,b)=>a+b,0)+desired-BUILDER_COLS);
-      let remain=need;
-      // Shrink closest neighbors first: left neighbor, right neighbor, then outward.
+      while(insert<row.length && pointerCenter>row[insert].gridX+row[insert].gridW/2)insert++;
+
+      // Option 3: insertion width follows how deeply the dragged widget enters the neighboring block.
+      // Start compact, then grow cell-by-cell up to the dragged widget's own width.
+      const MIN_SLOT=2, minEach=2;
+      const natural=Math.max(MIN_SLOT,Math.min(moving.gridW,12));
+      const left=insert>0?row[insert-1]:null,right=insert<row.length?row[insert]:null;
+      let depth=0;
+      if(left){
+        const overlap=Math.max(0,(left.gridX+left.gridW)-wantX);
+        depth=Math.max(depth,overlap);
+      }
+      if(right){
+        const overlap=Math.max(0,(wantX+moving.gridW)-right.gridX);
+        depth=Math.max(depth,overlap);
+      }
+      // At a page edge the cursor distance from the edge controls the slot too.
+      if(insert===0)depth=Math.max(depth,Math.max(0,moving.gridW-wantX+1));
+      if(insert===row.length)depth=Math.max(depth,Math.max(0,wantX+moving.gridW-1-BUILDER_COLS));
+
+      let desired=Math.max(MIN_SLOT,Math.min(natural,MIN_SLOT+Math.round(depth)));
+      const maxPossible=Math.max(MIN_SLOT,BUILDER_COLS-row.length*minEach);
+      desired=Math.min(desired,maxPossible);
+
+      const widths=row.map(o=>o.gridW);
+      let remain=Math.max(0,widths.reduce((a,b)=>a+b,0)+desired-BUILDER_COLS);
+      // Only nearby boundaries give way first, then more distant neighbors if absolutely needed.
       const order=[];
       for(let d=1;d<=row.length;d++){const l=insert-d,r=insert+d-1;if(l>=0)order.push(l);if(r<row.length)order.push(r)}
-      for(const idx of order){if(remain<=0)break;const take=Math.min(remain,widths[idx]-minEach);widths[idx]-=take;remain-=take}
+      for(const idx of order){
+        if(remain<=0)break;
+        const take=Math.min(remain,Math.max(0,widths[idx]-minEach));
+        widths[idx]-=take;remain-=take;
+      }
       if(remain>0)return null;
+
       let x=1;const placements=[];
       for(let i=0;i<=row.length;i++){
         if(i===insert){placements.push({id:moving.id,x,y:rowY,w:desired,h:moving.gridH,isMoving:true});x+=desired}
@@ -2974,7 +2998,7 @@
       }
       return{placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
     }
-    function builderShowRowPlan(grid,plan){
+        function builderShowRowPlan(grid,plan){
       grid.querySelectorAll(".builder-insert-preview").forEach(x=>x.remove());
       grid.querySelectorAll(".builder-preview-neighbor").forEach(x=>x.classList.remove("builder-preview-neighbor"));
       if(!plan?.moving)return;
@@ -3256,8 +3280,8 @@
             if(!active&&Math.hypot(ev.clientX-startX,ev.clientY-startY)<7)return;
             if(!active){
               active=true;document.body.classList.add("builder-pointer-drag");
-              incoming=builderMakeWidgetBlock(payload.widget);builderGridNormalize(incoming);
-              ghost=document.createElement("div");ghost.className="builder-drag-ghost";ghost.style.width="110px";ghost.style.height="80px";
+              incoming=builderMakeWidgetBlock(payload.widget);builderGridNormalize(incoming);incoming.gridW=Math.min(incoming.gridW,6);incoming.span=incoming.gridW;
+              ghost=document.createElement("div");ghost.className="builder-drag-ghost";const ghostW=Math.max(72,Math.min(150,card.getBoundingClientRect().width));ghost.style.width=ghostW+"px";ghost.style.height=Math.max(64,Math.min(110,card.getBoundingClientRect().height))+"px";
               const source=card.querySelector("img");if(source){const im=source.cloneNode();ghost.appendChild(im)}else ghost.textContent=payload.widget.name||"Widget";
               document.body.appendChild(ghost);
             }
