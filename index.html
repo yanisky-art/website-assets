@@ -1185,7 +1185,7 @@
               <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
               <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
-              <a class="builder-mini" id="builder-preview" href="?preview=1&page=home" target="_blank" rel="noopener" style="text-decoration:none">Предпросмотр ↗</a>\n              <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
+              <a class="builder-mini" id="builder-preview" href="./preview.html?page=home" target="_blank" rel="noopener" style="text-decoration:none">Предпросмотр ↗</a>\n              <button class="builder-mini" id="builder-save" type="button">Сохранить черновик</button>
             </div>
           </div>
           <div class="builder-canvas-wrap">
@@ -3017,7 +3017,7 @@
       });
       document.getElementById("builder-current-page").textContent=builderPage().name;
       const previewLink=document.getElementById("builder-preview");
-      if(previewLink){const u=new URL(window.location.href);u.search="";u.searchParams.set("preview","1");u.searchParams.set("page",builderPage().id);previewLink.href=u.toString()}
+      if(previewLink){const u=new URL("./preview.html",window.location.href);u.searchParams.set("page",builderPage().id);previewLink.href=u.toString()}
     }
 
     function builderBlockMarkup(b){
