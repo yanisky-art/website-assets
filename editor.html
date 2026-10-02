@@ -965,7 +965,7 @@
     tabButtons.forEach(
       function (button) {
 
-        button.addEventListener(
+        button?.addEventListener(
           "click",
           function () {
 
@@ -1926,7 +1926,7 @@
     /* COPY NOTEBOOK                         */
     /* ===================================== */
 
-    copyNotebook.addEventListener(
+    copyNotebook?.addEventListener(
       "click",
       function () {
 
@@ -2055,7 +2055,7 @@
     /* CLEAR NOTEBOOK                        */
     /* ===================================== */
 
-    clearNotebookButton.addEventListener(
+    clearNotebookButton?.addEventListener(
       "click",
       function () {
 
@@ -2217,7 +2217,7 @@
     );
 
 
-    copyButton.addEventListener(
+    copyButton?.addEventListener(
       "click",
       function () {
 
@@ -2235,7 +2235,7 @@
     );
 
 
-    saveButton.addEventListener(
+    saveButton?.addEventListener(
       "click",
       function () {
 
@@ -2401,7 +2401,7 @@
             "Удалить из My Widgets";
 
 
-          deleteButton.addEventListener(
+          deleteButton?.addEventListener(
             "click",
             function (event) {
 
@@ -2561,7 +2561,7 @@
               "Edit";
 
 
-            editButton.addEventListener(
+            editButton?.addEventListener(
               "click",
               function () {
 
@@ -2932,7 +2932,7 @@
               // are cleared and the grid commits the new dimensions cleanly.
               builderRenderCanvas();builderRenderInspector();
             };
-            handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
+            handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
         });
         grid.appendChild(el);grid.appendChild(zone(i+1));
@@ -3050,7 +3050,7 @@
     }
 
     function builderRender(){const tool=document.getElementById("page-builder-tool");if(tool){tool.classList.add("active");tool.style.display="block"}builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit()}
-    window.addEventListener("message",e=>{
+    window?.addEventListener("message",e=>{
       const d=e.data;
       if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;
       document.querySelectorAll(".block-widget-frame").forEach(frame=>{
@@ -3072,13 +3072,13 @@
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>{
       btn.draggable=true;
-      btn.addEventListener("click",()=>builderInsertBlock(btn.dataset.builderAdd));
-      btn.addEventListener("dragstart",e=>{
+      btn?.addEventListener("click",()=>builderInsertBlock(btn.dataset.builderAdd));
+      btn?.addEventListener("dragstart",e=>{
         btn.classList.add("drag-source");
         e.dataTransfer.effectAllowed="copy";
         e.dataTransfer.setData("application/json",JSON.stringify({kind:"block",type:btn.dataset.builderAdd}));
       });
-      btn.addEventListener("dragend",()=>btn.classList.remove("drag-source"));
+      btn?.addEventListener("dragend",()=>btn.classList.remove("drag-source"));
     });
     document.getElementById("builder-undo")?.addEventListener("click",builderUndo);
     document.getElementById("builder-redo")?.addEventListener("click",builderRedo);
@@ -3096,7 +3096,7 @@
     document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
     document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
     document.getElementById("builder-publish")?.addEventListener("click",e=>builderPublish(e.currentTarget));
-    document.addEventListener("keydown",e=>{
+    document?.addEventListener("keydown",e=>{
       if(!document.body.classList.contains("builder-mode")||PREVIEW_MODE)return;
       const tag=(e.target?.tagName||"").toLowerCase();if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="c"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);return}
@@ -3107,7 +3107,7 @@
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);builderPaste()}
       if((e.key==="Delete"||e.key==="Backspace")&&builderSelected){e.preventDefault();builderDeleteBlock(builderSelected)}
    },true);;
-    document.addEventListener("keydown",e=>{
+    document?.addEventListener("keydown",e=>{
       if(e.key!=="Tab" || PREVIEW_MODE)return;
       const tag=(e.target?.tagName||"").toLowerCase();
       if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
