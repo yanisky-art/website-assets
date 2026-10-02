@@ -1387,13 +1387,13 @@
     }
 
 
-    notebookFolder.addEventListener(
+    notebookFolder?.addEventListener(
       "input",
       resetNotebookCheck
     );
 
 
-    notebookPrefix.addEventListener(
+    notebookPrefix?.addEventListener(
       "input",
       resetNotebookCheck
     );
@@ -1410,19 +1410,19 @@
 
 
       editMode
-        .classList
+        ?.classList
         .remove("visible");
 
 
-      editWidgetName.textContent =
+      if(editWidgetName) editWidgetName.textContent =
         "";
 
 
-      createNotebookButton.textContent =
+      if(createNotebookButton) createNotebookButton.textContent =
         "Создать блокнот";
 
 
-      saveNotebook.textContent =
+      if(saveNotebook) saveNotebook.textContent =
         "Сохранить?";
 
     }
