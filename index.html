@@ -3248,7 +3248,7 @@
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
     }));
-\n    document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
+    document.getElementById("builder-preview")?.addEventListener("pointerdown",()=>builderPersist());
     document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
     document.addEventListener("keydown",e=>{
       if(e.key!=="Tab" || PREVIEW_MODE)return;
