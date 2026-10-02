@@ -1213,7 +1213,12 @@
             <div class="builder-toolbar-group">
               <button class="builder-mini" id="builder-undo" type="button" title="Отменить последнее действие (Ctrl/Cmd+Z)" disabled>↶ Отменить</button>
               <button class="builder-mini" id="builder-redo" type="button" title="Вернуть отменённое действие (Ctrl/Cmd+Shift+Z)" disabled>↷ Вернуть</button>
-              <button class="builder-mini" id="builder-paste-top" type="button" title="Вставить скопированный блок (Ctrl/Cmd+V)">⎘ Вставить</button>
+              <button class="builder-mini" id="builder-copy-top" type="button" title="Копировать выбранный блок или папку (Ctrl/Cmd+C)">Копировать</button>
+              <button class="builder-mini" id="builder-cut-top" type="button" title="Вырезать выбранный блок или папку (Ctrl/Cmd+X)">Вырезать</button>
+              <button class="builder-mini" id="builder-paste-top" type="button" title="Вставить скопированный блок или папку (Ctrl/Cmd+V)">Вставить</button>
+              <button class="builder-mini" id="builder-duplicate-top" type="button" title="Дублировать выбранный блок или папку (Ctrl/Cmd+D)">Дублировать</button>
+              <button class="builder-mini" id="builder-lock-top" type="button" title="Заблокировать или разблокировать выбранный блок">Заблокировать</button>
+              <button class="builder-mini" id="builder-delete-top" type="button" title="Удалить выбранный блок или папку">Удалить</button>
               <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
               <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
@@ -3262,7 +3267,7 @@
       const host=document.getElementById("builder-inspector"); if(!host)return;
       const block=builderPage().blocks.find(x=>x.id===builderSelected);
       if(!block){host.innerHTML='<p class="builder-note">Выбери блок на странице, чтобы изменить его.</p>';return}
-      const layerHtml='<div class="builder-layer-menu"><button class="builder-mini" id="builder-copy-layer" type="button" title="Ctrl/Cmd+C">Копировать</button><button class="builder-mini" id="builder-cut-layer" type="button" title="Ctrl/Cmd+X">Вырезать</button><button class="builder-mini" id="builder-paste-layer" type="button" title="Ctrl/Cmd+V">Вставить</button><button class="builder-mini" id="builder-duplicate-layer" type="button">Дублировать</button><button class="builder-mini" id="builder-toggle-lock" type="button">'+(block.locked?"Разблокировать":"Заблокировать")+'</button><button class="builder-mini" id="builder-delete-layer" type="button">Удалить</button></div><div class="inspector-field"><label>Прозрачность</label><div class="builder-opacity-row"><input id="builder-opacity" type="range" min="0" max="100" value="'+(block.opacity??100)+'"><span id="builder-opacity-value">'+(block.opacity??100)+'%</span></div></div><div class="inspector-field"><label>Видимость по устройствам</label><div class="builder-width-options">'+["desktop","tablet","mobile"].map(d=>'<button type="button" class="builder-width-btn'+(block.deviceVisibility?.[d]!==false?" active":"")+'" data-device-visible="'+d+'">'+({desktop:"Desktop",tablet:"Tablet",mobile:"Mobile"})[d]+'</button>').join("")+'</div></div>';
+      const layerHtml='<div class="inspector-field"><label>Прозрачность</label><div class="builder-opacity-row"><input id="builder-opacity" type="range" min="0" max="100" value="'+(block.opacity??100)+'"><span id="builder-opacity-value">'+(block.opacity??100)+'%</span></div></div><div class="inspector-field"><label>Видимость по устройствам</label><div class="builder-width-options">'+["desktop","tablet","mobile"].map(d=>'<button type="button" class="builder-width-btn'+(block.deviceVisibility?.[d]!==false?" active":"")+'" data-device-visible="'+d+'">'+({desktop:"Desktop",tablet:"Tablet",mobile:"Mobile"})[d]+'</button>').join("")+'</div></div>';
       const span=builderSpan(block),height=builderHeight(block);
       const widthHtml='<div class="inspector-field"><label>Ширина блока</label><div class="builder-width-options">'+[[6,"25%"],[8,"33%"],[12,"50%"],[16,"66%"],[18,"75%"],[24,"100%"]].map(([s,l])=>'<button type="button" class="builder-width-btn'+(span===s?" active":"")+'" data-span="'+s+'">'+l+'</button>').join("")+'</div><p class="builder-note">Сетка теперь состоит из 24 сегментов. За края можно менять одну сторону, за уголки - ширину и высоту одновременно.</p></div><div class="inspector-field"><label>Высота блока</label><div class="builder-height-row"><input id="builder-height-input" type="number" min="48" step="1" value="'+(height||"")+'" placeholder="Авто"><button class="builder-mini" id="builder-height-auto" type="button">Авто</button></div></div>';
       let body="";
@@ -3274,12 +3279,6 @@
       }
       host.innerHTML=body+layerHtml+widthHtml;
       host.querySelectorAll("[data-span]").forEach(btn=>btn.onclick=()=>builderSetSpan(block,+btn.dataset.span));
-      document.getElementById("builder-copy-layer")?.addEventListener("click",()=>{builderSelected=block.id;builderCopySelection(false)});
-      document.getElementById("builder-cut-layer")?.addEventListener("click",()=>{builderSelected=block.id;builderCopySelection(true)});
-      document.getElementById("builder-paste-layer")?.addEventListener("click",()=>builderPaste());
-      document.getElementById("builder-duplicate-layer")?.addEventListener("click",()=>builderDuplicateBlock(block.id));
-      document.getElementById("builder-toggle-lock")?.addEventListener("click",()=>builderToggleLock(block.id));
-      document.getElementById("builder-delete-layer")?.addEventListener("click",()=>builderDeleteBlock(block.id));
       const op=document.getElementById("builder-opacity");if(op)op.oninput=()=>{block.opacity=+op.value;document.getElementById("builder-opacity-value").textContent=op.value+"%";const el=document.querySelector('.page-block[data-id="'+block.id+'"]');if(el)el.style.opacity=op.value/100;builderRenderLayers()};
       host.querySelectorAll("[data-device-visible]").forEach(btn=>btn.onclick=()=>{block.deviceVisibility=block.deviceVisibility||{desktop:true,tablet:true,mobile:true};const d=btn.dataset.deviceVisible;block.deviceVisibility[d]=block.deviceVisibility[d]===false?true:false;btn.classList.toggle("active",block.deviceVisibility[d]!==false)});
       const hi=document.getElementById("builder-height-input");if(hi)hi.onchange=()=>{block.height=hi.value?Math.max(48,+hi.value):null;builderRenderCanvas();builderRenderInspector()};
@@ -3399,7 +3398,13 @@
     });
     document.getElementById("builder-undo")?.addEventListener("click",builderUndo);
     document.getElementById("builder-redo")?.addEventListener("click",builderRedo);
+    document.getElementById("builder-copy-top")?.addEventListener("click",()=>builderCopySelection(false));
+    document.getElementById("builder-cut-top")?.addEventListener("click",()=>builderCopySelection(true));
     document.getElementById("builder-paste-top")?.addEventListener("click",()=>builderPaste());
+    document.getElementById("builder-duplicate-top")?.addEventListener("click",()=>{if(builderSelected)builderDuplicateBlock(builderSelected);else if(builderSelectedFolder){builderCopySelection(false);builderPaste()}});
+    document.getElementById("builder-lock-top")?.addEventListener("click",()=>{if(builderSelected)builderToggleLock(builderSelected)});
+    document.getElementById("builder-delete-top")?.addEventListener("click",()=>{if(builderSelected)builderDeleteBlock(builderSelected);else if(builderSelectedFolder){const p=builderPage();p.folders=(p.folders||[]).filter(g=>g.id!==builderSelectedFolder);builderSelectedFolder=null;builderRender()}});
+
     document.querySelectorAll("[data-builder-device]").forEach(btn=>btn.addEventListener("click",()=>{
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
