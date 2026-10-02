@@ -2759,6 +2759,10 @@
     }
     function builderPersist(){
       if(!builderState || !Array.isArray(builderState.pages) || !builderState.pages.length) return false;
+      if(builderState.pages.some(page=>builderPageHasCollisions(page))){
+        builderDraftStatus("Нельзя сохранить: виджеты пересекаются","dirty");
+        return false;
+      }
       const next=JSON.stringify(builderState);
       const current=localStorage.getItem(PAGE_BUILDER_KEY);
       if(current){
@@ -2926,6 +2930,15 @@
     }
     function builderGridRect(b){builderGridNormalize(b);return{x:b.gridX,y:b.gridY,w:b.gridW,h:b.gridH}}
     function builderGridCollides(a,b){const A=builderGridRect(a),B=builderGridRect(b);return A.x<B.x+B.w&&A.x+A.w>B.x&&A.y<B.y+B.h&&A.y+A.h>B.y}
+    function builderPageHasCollisions(page){
+      if(!page?.blocks)return false;
+      for(let i=0;i<page.blocks.length;i++)for(let j=i+1;j<page.blocks.length;j++)if(builderGridCollides(page.blocks[i],page.blocks[j]))return true;
+      return false;
+    }
+    function builderCollisionFreeSnapshot(page){return page.blocks.map(b=>({id:b.id,gridX:b.gridX,gridY:b.gridY,gridW:b.gridW,gridH:b.gridH,span:b.span,height:b.height,gridVersion:b.gridVersion}))}
+    function builderRestoreGeometry(page,snapshot){
+      snapshot.forEach(s=>{const b=page.blocks.find(x=>x.id===s.id);if(!b)return;Object.assign(b,s)});
+    }
     function builderGridFindFree(page,w,h,startY=1){
       for(let y=Math.max(1,startY);y<500;y++)for(let x=1;x<=BUILDER_COLS-w+1;x++){
         const probe={gridX:x,gridY:y,gridW:w,gridH:h,span:w,gridVersion:24};
@@ -3300,7 +3313,7 @@
         const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
-        el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
+        el.innerHTML='<div class="page-block-tools"><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
         el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
         el.onpointerdown=e=>{
           if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
@@ -3337,7 +3350,7 @@
             if(block.locked)return;
             e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("selected","resizing");grid.classList.add("grid-interacting");
             handle.setPointerCapture(e.pointerId);
-            const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height,startRect=builderGridRect(block);let resizeNeighborPlan=null;
+            const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height,startRect=builderGridRect(block),geometryBefore=builderCollisionFreeSnapshot(page);let resizeNeighborPlan=null;
             const col=gridRect.width/24;
             const move=ev=>{
               const dx=ev.clientX-startX,dy=ev.clientY-startY;
@@ -3383,8 +3396,11 @@
               handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
               el.draggable=true;el.classList.remove("resizing");grid.classList.remove("grid-interacting");
               builderApplyResizeNeighbor(page,resizeNeighborPlan);
+              if(builderPageHasCollisions(page)){
+                builderRestoreGeometry(page,geometryBefore);
+              }
               grid.querySelectorAll(".builder-resize-neighbor").forEach(x=>x.classList.remove("builder-resize-neighbor"));
-              // The block being resized always keeps its position. Only the directly touched neighbor yields.
+              // Final safety gate: resize is accepted only when the complete page is collision-free.
               builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit();
             };
             handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
@@ -3395,8 +3411,6 @@
       grid.appendChild(zone(page.blocks.length));
 
       grid.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>builderDeleteBlock(x.dataset.delete));
-      grid.querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>{const i=+x.dataset.up;if(i>0){[page.blocks[i-1],page.blocks[i]]=[page.blocks[i],page.blocks[i-1]];builderRenderCanvas();builderRenderLayers()}});
-      grid.querySelectorAll("[data-down]").forEach(x=>x.onclick=()=>{const i=+x.dataset.down;if(i<page.blocks.length-1){[page.blocks[i+1],page.blocks[i]]=[page.blocks[i],page.blocks[i+1]];builderRenderCanvas()}});
     }
 
     function builderRenderInspector(){
