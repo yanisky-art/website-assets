@@ -3608,8 +3608,17 @@
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
     }));
     document.getElementById("builder-preview")?.addEventListener("click",e=>{
-      if(!builderPersist()){e.preventDefault();alert("Черновик не удалось сохранить.");return}
-      const u=new URL(e.currentTarget.href);u.searchParams.set("draft",Date.now());e.currentTarget.href=u.toString();
+      e.preventDefault();
+      // Preview must always reflect the live editor state, even before a manual save.
+      // Do not route preview through builderPersist(): the strict collision guard is for
+      // durable saves/publishing and must not prevent a read-only preview.
+      try{localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState))}
+      catch(err){alert("Не удалось подготовить предпросмотр.");return}
+      const u=new URL("./index.html",window.location.href);
+      u.searchParams.set("page",builderPage().id);
+      u.searchParams.set("draft","1");
+      u.searchParams.set("preview",Date.now().toString());
+      window.open(u.toString(),"_blank","noopener");
     });
     document.getElementById("builder-save")?.addEventListener("click",e=>{builderPersist();const old=e.target.textContent;e.target.textContent="Сохранено ✓";setTimeout(()=>e.target.textContent=old,1200)});
     document.getElementById("builder-backup")?.addEventListener("click",e=>builderBackup(e.currentTarget));
