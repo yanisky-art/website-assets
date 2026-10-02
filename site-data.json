@@ -6,17 +6,55 @@
       "name": "HOME",
       "blocks": [
         {
-          "id": "pub-menu",
+          "id": "bmuqa00et90vd",
           "type": "site-menu",
+          "title": "",
+          "text": "",
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": false,
           "opacity": 100,
           "deviceVisibility": {
             "desktop": true,
             "tablet": true,
             "mobile": true
-          }
+          },
+          "height": 105
+        },
+        {
+          "id": "bmuqa128q2qqp",
+          "type": "saved-widget",
+          "title": "Black Sketchbook",
+          "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_01.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_02.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_03.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_04.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_05.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_06.png",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 419
+        },
+        {
+          "id": "bmuqa1cg2nef8",
+          "type": "saved-widget",
+          "title": "green_sketchbook_00.png",
+          "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_00.png&link=https%3A%2F%2Fyanisky-art.github.io%2Fwebsite-assets%2Fnotebook%2F%3Fpages%3Dassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_01.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_02.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_03.png",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 461
         }
       ],
       "folders": []
@@ -24,43 +62,176 @@
     {
       "id": "about",
       "name": "ABOUT",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqaurfucdsc",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "traditional",
       "name": "TRADITIONAL",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqauvsa23cv",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "digital",
       "name": "DIGITAL",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqauxob3vpy",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "mixed-media",
       "name": "MIXED MEDIA",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqauznueezt",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "projects",
       "name": "PROJECTS",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqav1lmq9ck",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "events",
       "name": "EVENTS",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqav3iy5p8x",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     },
     {
       "id": "contact",
       "name": "CONTACT",
-      "blocks": [],
+      "blocks": [
+        {
+          "id": "bmuqav5juzlg5",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 77,
+          "layerName": "Меню"
+        }
+      ],
       "folders": []
     }
   ]
