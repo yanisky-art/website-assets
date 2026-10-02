@@ -819,7 +819,13 @@
       .builder-height-row input{border-color:#555}.builder-resize-handle[data-dir="ne"],.builder-resize-handle[data-dir="nw"],.builder-resize-handle[data-dir="se"],.builder-resize-handle[data-dir="sw"]{background:#191919}
     }
 
-  </style>
+      /* PAGE BUILDER V5 - free 2D grid */
+    .builder-grid{display:grid!important;grid-template-columns:repeat(24,minmax(0,1fr))!important;grid-auto-rows:24px!important;gap:6px!important;align-items:stretch!important;position:relative!important}
+    .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
+    .page-block .block-widget-frame{height:100%!important;min-height:0!important}
+    .builder-insert-zone{display:none!important}
+    .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.10) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.10) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
+</style>
 </head>
 
 
@@ -2888,30 +2894,55 @@
       }
       return Math.max(2,Math.min(24,Number(block.span||24)));
     }
-    function builderSetSpan(block,span){block.span=Math.max(2,Math.min(24,Number(span)));block.gridVersion=24;builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
+    function builderSetSpan(block,span){builderGridNormalize(block);block.gridW=Math.max(2,Math.min(24-block.gridX+1,Number(span)));block.span=block.gridW;block.gridVersion=24;builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
     function builderHeight(block){return block.height?Math.max(48,Number(block.height)):null}
-    function builderRowForBlock(page,block){
-      const rows=[];let row=[],sum=0;
-      page.blocks.forEach(b=>{const s=builderSpan(b);if(row.length&&sum+s>24){rows.push(row);row=[];sum=0}row.push(b);sum+=s;if(sum>=24){rows.push(row);row=[];sum=0}});
-      if(row.length)rows.push(row);
-      return rows.find(r=>r.some(b=>b.id===block.id))||[block];
+    const BUILDER_COLS=24,BUILDER_ROW_PX=30;
+    function builderGridMigrate(page){
+      if(page.grid2DVersion===1)return;
+      let x=1,y=1,rowH=18;
+      page.blocks.forEach(b=>{
+        const w=builderSpan(b),h=Math.max(3,Math.round((Number(b.height)||420)/BUILDER_ROW_PX));
+        if(x+w-1>BUILDER_COLS){x=1;y+=rowH;rowH=18}
+        b.gridX=x;b.gridY=y;b.gridW=w;b.gridH=h;b.gridVersion=24;
+        x+=w;rowH=Math.max(rowH,h);
+        if(x>BUILDER_COLS){x=1;y+=rowH;rowH=18}
+      });
+      page.grid2DVersion=1;
     }
-    function builderEqualizeRow(row){
-      const n=row.length;if(!n)return;
-      let left=24;
-      row.forEach((b,i)=>{const remain=n-i;const s=i===n-1?left:Math.max(2,Math.floor(left/remain));b.span=s;b.gridVersion=24;left-=s});
+    function builderGridNormalize(b){
+      b.gridW=Math.max(2,Math.min(BUILDER_COLS,Number(b.gridW||builderSpan(b))));
+      b.gridH=Math.max(3,Number(b.gridH||Math.round((Number(b.height)||420)/BUILDER_ROW_PX)));
+      b.gridX=Math.max(1,Math.min(BUILDER_COLS-b.gridW+1,Number(b.gridX||1)));
+      b.gridY=Math.max(1,Number(b.gridY||1));
+      b.span=b.gridW;b.gridVersion=24;
     }
-    function builderRedistributeRow(page,block,newSpan){
-      const row=builderRowForBlock(page,block);if(row.length<2){block.span=Math.max(2,Math.min(24,newSpan));block.gridVersion=24;return}
-      const max=Math.max(2,24-2*(row.length-1));newSpan=Math.max(2,Math.min(max,newSpan));
-      block.span=newSpan;block.gridVersion=24;
-      const others=row.filter(b=>b.id!==block.id);let left=24-newSpan;
-      others.forEach((b,i)=>{const remain=others.length-i;const s=i===others.length-1?left:Math.max(2,Math.floor(left/remain));b.span=s;b.gridVersion=24;left-=s});
+    function builderGridRect(b){builderGridNormalize(b);return{x:b.gridX,y:b.gridY,w:b.gridW,h:b.gridH}}
+    function builderGridCollides(a,b){const A=builderGridRect(a),B=builderGridRect(b);return A.x<B.x+B.w&&A.x+A.w>B.x&&A.y<B.y+B.h&&A.y+A.h>B.y}
+    function builderGridFindFree(page,w,h,startY=1){
+      for(let y=Math.max(1,startY);y<500;y++)for(let x=1;x<=BUILDER_COLS-w+1;x++){
+        const probe={gridX:x,gridY:y,gridW:w,gridH:h,span:w,gridVersion:24};
+        if(!page.blocks.some(b=>builderGridCollides(probe,b)))return{x,y};
+      }
+      return{x:1,y:1};
     }
+    function builderGridPlaceNear(page,incoming,anchor,side){
+      builderGridNormalize(anchor);builderGridNormalize(incoming);
+      const a=builderGridRect(anchor);
+      incoming.gridW=Math.max(2,Math.min(incoming.gridW,Math.floor(BUILDER_COLS/2)));
+      incoming.gridH=Math.max(3,incoming.gridH);
+      let x=side==="left"?a.x-incoming.gridW:a.x+a.w,y=a.y;
+      if(x<1||x+incoming.gridW-1>BUILDER_COLS||page.blocks.some(b=>b!==anchor&&b!==incoming&&builderGridCollides({...incoming,gridX:x,gridY:y},b))){
+        const pos=builderGridFindFree(page,incoming.gridW,incoming.gridH,a.y);x=pos.x;y=pos.y;
+      }
+      incoming.gridX=x;incoming.gridY=y;incoming.span=incoming.gridW;
+    }
+    function builderRowForBlock(page,block){return page.blocks.filter(b=>{builderGridNormalize(b);return b.gridY===block.gridY})}
+    function builderEqualizeRow(row){row.forEach(b=>builderGridNormalize(b))}
+    function builderRedistributeRow(page,block,newSpan){builderGridNormalize(block);block.gridW=Math.max(2,Math.min(BUILDER_COLS-block.gridX+1,newSpan));block.span=block.gridW}
 
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
-      const page=builderPage(); builderNormalizeLayers(); canvas.innerHTML="";
+      const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
       canvas.onclick=e=>{
         if(e.target.closest(".page-block")||e.target.closest(".builder-insert-zone"))return;
         if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
@@ -2941,10 +2972,10 @@
       }
 
       page.blocks.forEach((block,i)=>{
-        const span=builderSpan(block),height=builderHeight(block);
+        builderGridNormalize(block); const span=block.gridW,height=builderHeight(block);
       builderNormalizeLayers();
         const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=!block.locked;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
-        el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");
+        el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
         el.ondragover=e=>{
@@ -2975,13 +3006,29 @@
           // Side-by-side docking: dropping on the left/right half of another
           // block makes both blocks share one row automatically.
           targetIndex=page.blocks.findIndex(x=>x.id===block.id);
-          const existingRow=builderRowForBlock(page,block);
+          builderGridNormalize(incoming);builderGridPlaceNear(page,incoming,block,side);
           page.blocks.splice(side==="left"?targetIndex:targetIndex+1,0,incoming);
-          builderEqualizeRow([...existingRow,incoming]);
           builderSelected=incoming.id;builderSelectedFolder=null;
           builderRender();builderHistoryCommit();
         };
         el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
+        el.onpointerdown=e=>{
+          if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
+          const sx=e.clientX,sy=e.clientY;let active=false;
+          const start=builderGridRect(block),gr=grid.getBoundingClientRect(),col=(gr.width-23*6)/24;
+          const move=ev=>{
+            if(!active&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<7)return;
+            if(!active){active=true;grid.classList.add("grid-interacting");el.classList.add("dragging");el.querySelectorAll("iframe").forEach(x=>x.style.pointerEvents="none")}
+            const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
+            block.gridX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx));block.gridY=Math.max(1,start.y+dy);
+            el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
+          };
+          const up=()=>{
+            window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);
+            if(active){grid.classList.remove("grid-interacting");el.classList.remove("dragging");el.querySelectorAll("iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
+          };
+          window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
+        };
         el.oncontextmenu=e=>{
           e.preventDefault();builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();
           document.querySelector(".builder-context-menu")?.remove();
@@ -2995,7 +3042,7 @@
         el.querySelectorAll(".builder-resize-handle").forEach(handle=>{
           handle.onpointerdown=e=>{
             if(block.locked)return;
-            e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("selected","resizing");
+            e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("selected","resizing");grid.classList.add("grid-interacting");
             handle.setPointerCapture(e.pointerId);
             const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height;
             const col=gridRect.width/24;
@@ -3007,10 +3054,13 @@
               if(dir.includes("s"))nextHeight=Math.round(startHeight+dy);
               if(dir.includes("n"))nextHeight=Math.round(startHeight-dy);
               nextSpan=Math.max(2,Math.min(24,nextSpan));nextHeight=Math.max(48,nextHeight);
-              if(dir.includes("e")||dir.includes("w"))builderRedistributeRow(page,block,nextSpan);
-              else {block.span=nextSpan;block.gridVersion=24}
-              nextSpan=builderSpan(block);
-              if(dir.includes("n")||dir.includes("s"))block.height=nextHeight;
+              builderGridNormalize(block);
+              if(dir.includes("e"))block.gridW=Math.max(2,Math.min(BUILDER_COLS-block.gridX+1,nextSpan));
+              if(dir.includes("w")){const oldRight=block.gridX+block.gridW;block.gridW=Math.max(2,Math.min(oldRight-1,nextSpan));block.gridX=Math.max(1,oldRight-block.gridW)}
+              if(dir.includes("s"))block.gridH=Math.max(3,Math.round(nextHeight/BUILDER_ROW_PX));
+              if(dir.includes("n")){const oldBottom=block.gridY+block.gridH;block.gridH=Math.max(3,Math.round(nextHeight/BUILDER_ROW_PX));block.gridY=Math.max(1,oldBottom-block.gridH)}
+              block.span=block.gridW;block.gridVersion=24;nextSpan=block.gridW;
+              if(dir.includes("n")||dir.includes("s"))block.height=block.gridH*BUILDER_ROW_PX;
 
               // CSS Grid normally anchors the block at top-left. For west/north
               // resizing, translate the live preview by exactly the change in
@@ -3018,8 +3068,7 @@
               if(dir.includes("w"))offsetX=(startSpan-nextSpan)*col;
               if(dir.includes("n"))offsetY=startHeight-nextHeight;
 
-              builderRowForBlock(page,block).forEach(rb=>{const rel=grid.querySelector('.page-block[data-id="'+rb.id+'"]');if(rel)rel.style.setProperty("--builder-span",builderSpan(rb))});
-              el.style.setProperty("--builder-span",nextSpan);
+              el.style.setProperty("--builder-span",nextSpan);el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
               el.style.setProperty("--builder-offset-x",offsetX+"px");
               el.style.setProperty("--builder-offset-y",offsetY+"px");
               if(block.height)el.style.setProperty("--builder-height",block.height+"px");
@@ -3028,7 +3077,7 @@
             const finish=ev=>{
               try{handle.releasePointerCapture(ev.pointerId)}catch(err){}
               handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
-              el.draggable=true;el.classList.remove("resizing");
+              el.draggable=true;el.classList.remove("resizing");grid.classList.remove("grid-interacting");
               // Re-render after release so temporary north/west preview offsets
               // are cleared and the grid commits the new dimensions cleanly.
               builderRenderCanvas();builderRenderInspector();builderHistoryCommit();
@@ -3106,7 +3155,7 @@
             if(active&&target){
               ev.preventDefault();ev.stopPropagation();
               const targetId=target.dataset.id,p=builderPage(),idx=p.blocks.findIndex(x=>x.id===targetId),anchor=p.blocks[idx];
-              if(anchor){const incoming=builderMakeWidgetBlock(payload.widget),existingRow=builderRowForBlock(p,anchor);p.blocks.splice(side==="left"?idx:idx+1,0,incoming);builderEqualizeRow([...existingRow,incoming]);builderSelected=incoming.id;builderSelectedFolder=null;clear();builderRender();builderHistoryCommit();return}
+              if(anchor){const incoming=builderMakeWidgetBlock(payload.widget);builderGridNormalize(incoming);builderGridPlaceNear(p,incoming,anchor,side);p.blocks.splice(side==="left"?idx:idx+1,0,incoming);builderSelected=incoming.id;builderSelectedFolder=null;clear();builderRender();builderHistoryCommit();return}
             }
             clear();
           };
@@ -3129,14 +3178,14 @@
     }
     function builderInsertBlock(type,atIndex=null){
       const b=builderMakeBlock(type),blocks=builderPage().blocks;
-      if(atIndex===null)blocks.push(b);else blocks.splice(Math.max(0,atIndex),0,b);
+      builderGridMigrate(builderPage());builderGridNormalize(b);const pos=builderGridFindFree(builderPage(),b.gridW,b.gridH);b.gridX=pos.x;b.gridY=pos.y;if(atIndex===null)blocks.push(b);else blocks.splice(Math.max(0,atIndex),0,b);
       builderSelected=b.id;builderRender();return b;
     }
 
     function builderInsertWidget(w,atIndex=null){
       const block=builderMakeWidgetBlock(w);
       const blocks=builderPage().blocks;
-      if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
+      builderGridMigrate(builderPage());builderGridNormalize(block);const pos=builderGridFindFree(builderPage(),block.gridW,block.gridH);block.gridX=pos.x;block.gridY=pos.y;if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
       builderSelected=block.id;builderRender();
     }
 
