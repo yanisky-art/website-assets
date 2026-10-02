@@ -3035,6 +3035,8 @@
     let builderSelected = null;
     const BUILDER_HISTORY_LIMIT=15;
     let builderUndoStack=[],builderRedoStack=[],builderHistoryApplying=false,builderHistoryLast="";
+    let builderSelectedFolder=null;
+    let builderClipboard=null;
     function builderSnapshot(){return JSON.stringify(builderState)}
     function builderHistoryInit(){builderHistoryLast=builderSnapshot();builderUpdateHistoryButtons()}
     function builderHistoryCommit(){
@@ -3076,14 +3078,40 @@
     function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;builderRender()}
     function builderToggleVisibility(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.visible=b.visible===false?true:false;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderToggleLock(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.locked=!b.locked;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+    function builderCopySelection(cut=false){
+      const p=builderPage();
+      if(builderSelectedFolder){
+        const g=(p.folders||[]).find(x=>x.id===builderSelectedFolder);if(!g)return;
+        const blocks=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean).map(b=>structuredClone(b));
+        builderClipboard={kind:"folder",folder:structuredClone(g),blocks,cut,sourcePage:p.id};
+        if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;builderRender()}
+        return;
+      }
+      const b=builderSelectedBlock();if(!b)return;
+      builderClipboard={kind:"block",block:structuredClone(b),cut,sourcePage:p.id};
+      if(cut)builderDeleteBlock(b.id);
+    }
+    function builderPaste(){
+      if(!builderClipboard)return;const p=builderPage();p.folders=p.folders||[];
+      if(builderClipboard.kind==="block"){
+        const b=structuredClone(builderClipboard.block);b.id=builderUid();b.layerName=builderLayerName(b);p.blocks.push(b);builderSelected=b.id;builderSelectedFolder=null;
+      }else if(builderClipboard.kind==="folder"){
+        const idMap=new Map(),copies=builderClipboard.blocks.map(src=>{const b=structuredClone(src),old=b.id;b.id=builderUid();idMap.set(old,b.id);return b});
+        const g=structuredClone(builderClipboard.folder);g.id="g"+builderUid();g.name=(g.name||"Папка")+" копия";g.children=(g.children||[]).map(id=>idMap.get(id)).filter(Boolean);
+        p.blocks.push(...copies);p.folders.push(g);builderSelected=null;builderSelectedFolder=g.id;
+      }
+      if(builderClipboard.cut)builderClipboard=null;
+      builderRender();
+    }
     function builderRenderLayers(){
       const host=document.getElementById("builder-layers");if(!host)return;builderNormalizeLayers();const p=builderPage(),folders=p.folders||[];
       const inFolder=new Set(folders.flatMap(g=>g.children||[]));
       const row=b=>'<div class="builder-layer'+(builderSelected===b.id?" selected":"")+(b.visible===false?" hidden-layer":"")+(b.locked?" locked-layer":"")+'" draggable="true" data-layer-id="'+b.id+'"><button class="builder-layer-action" data-layer-eye="'+b.id+'" title="Показать / скрыть">'+(b.visible===false?"○":"●")+'</button><span class="builder-layer-icon">'+builderLayerIcon(b)+'</span><span class="builder-layer-name" data-layer-name="'+b.id+'" title="'+builderEsc(builderLayerName(b))+'">'+builderEsc(builderLayerName(b))+'</span><button class="builder-layer-action" data-layer-lock="'+b.id+'" title="Заблокировать">'+(b.locked?"🔒":"")+'</button></div>';
       let html="";
-      folders.forEach(g=>{const kids=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean);html+='<div class="builder-layer builder-layer-folder" data-folder-id="'+g.id+'"><button class="builder-layer-action" data-folder-toggle="'+g.id+'">'+(g.collapsed?"▸":"▾")+'</button><span class="builder-layer-icon">📁</span><span class="builder-layer-name" data-folder-name="'+g.id+'">'+builderEsc(g.name||"Папка")+'</span><button class="builder-layer-action" data-folder-delete="'+g.id+'" title="Убрать папку">×</button></div>';if(!g.collapsed)html+='<div class="builder-layer-folder-children" data-folder-drop="'+g.id+'>'+kids.map(row).join("")+'</div>'});
+      folders.forEach(g=>{const kids=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean);html+='<div class="builder-layer builder-layer-folder'+(builderSelectedFolder===g.id?" selected":"")+'" data-folder-id="'+g.id+'"><button class="builder-layer-action" data-folder-toggle="'+g.id+'">'+(g.collapsed?"▸":"▾")+'</button><span class="builder-layer-icon">📁</span><span class="builder-layer-name" data-folder-name="'+g.id+'">'+builderEsc(g.name||"Папка")+'</span><button class="builder-layer-action" data-folder-delete="'+g.id+'" title="Убрать папку">×</button></div>';if(!g.collapsed)html+='<div class="builder-layer-folder-children" data-folder-drop="'+g.id+'>'+kids.map(row).join("")+'</div>'});
       html+=p.blocks.filter(b=>!inFolder.has(b.id)).map(row).join("");host.innerHTML=html||'<p class="builder-note">На странице пока нет слоёв.</p>';
-      host.querySelectorAll("[data-layer-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button"))return;builderSelected=el.dataset.layerId;builderRenderCanvas();builderRenderLayers();builderRenderInspector();document.querySelector('.page-block[data-id="'+builderSelected+'"]')?.scrollIntoView({block:"nearest",behavior:"smooth"})};el.ondragstart=e=>{e.dataTransfer.setData("application/x-yanisky-layer",el.dataset.layerId)};});
+      host.querySelectorAll("[data-layer-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button"))return;builderSelected=el.dataset.layerId;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();document.querySelector('.page-block[data-id="'+builderSelected+'"]')?.scrollIntoView({block:"nearest",behavior:"smooth"})};el.ondragstart=e=>{e.dataTransfer.setData("application/x-yanisky-layer",el.dataset.layerId)};});
+      host.querySelectorAll("[data-folder-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button")||e.target.closest("[contenteditable=true]"))return;builderSelectedFolder=el.dataset.folderId;builderSelected=null;builderRenderLayers();builderRenderInspector()}});
       host.querySelectorAll("[data-layer-eye]").forEach(x=>x.onclick=e=>{e.stopPropagation();builderToggleVisibility(x.dataset.layerEye)});
       host.querySelectorAll("[data-layer-lock]").forEach(x=>x.onclick=e=>{e.stopPropagation();builderToggleLock(x.dataset.layerLock)});
       host.querySelectorAll("[data-layer-name]").forEach(x=>x.ondblclick=e=>{e.stopPropagation();x.contentEditable="true";x.focus();document.execCommand?.("selectAll",false,null);x.onblur=()=>{const b=p.blocks.find(b=>b.id===x.dataset.layerName);if(b){b.layerName=x.textContent.trim()||builderLayerName(b);builderRenderLayers()} };x.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();x.blur()}}});
@@ -3099,7 +3127,7 @@
       host.innerHTML="";
       builderState.pages.forEach(p=>{
         const b=document.createElement("button"); b.type="button"; b.className="builder-page"+(p.id===builderState.currentPage?" active":""); b.textContent=p.name;
-        b.onclick=()=>{builderState.currentPage=p.id;builderSelected=null;builderRender()};
+        b.onclick=()=>{builderState.currentPage=p.id;builderSelected=null;builderSelectedFolder=null;builderRender()};
         host.appendChild(b);
       });
       document.getElementById("builder-current-page").textContent=builderPage().name;
@@ -3365,9 +3393,12 @@
     document.addEventListener("keydown",e=>{
       if(!document.body.classList.contains("builder-mode")||PREVIEW_MODE)return;
       const tag=(e.target?.tagName||"").toLowerCase();if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="c"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);return}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="x"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(true);return}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="v"&&builderClipboard){e.preventDefault();builderPaste();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();if(e.shiftKey)builderRedo();else builderUndo();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();builderRedo();return}
-      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&builderSelected){e.preventDefault();builderDuplicateBlock(builderSelected)}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);builderPaste()}
       if((e.key==="Delete"||e.key==="Backspace")&&builderSelected){e.preventDefault();builderDeleteBlock(builderSelected)}
     });
     document.addEventListener("keydown",e=>{
@@ -3390,7 +3421,7 @@
     });
     document.getElementById("builder-add-page")?.addEventListener("click",()=>{
       const name=prompt("Название новой страницы:");if(!name)return;const id=name.toLowerCase().trim().replace(/[^a-zа-я0-9]+/gi,"-").replace(/^-|-$/g,"")+"-"+Date.now().toString(36).slice(-4);
-      builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[]});builderState.currentPage=id;builderSelected=null;builderRender();
+      builderState.pages.push({id,name:name.trim().toUpperCase(),blocks:[],folders:[]});builderState.currentPage=id;builderSelected=null;builderRender();
     });
     const requestedPage=URL_PARAMS.get("page");
     if(requestedPage && builderState.pages.some(p=>p.id===requestedPage)) builderState.currentPage=requestedPage;
