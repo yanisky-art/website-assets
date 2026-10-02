@@ -3046,10 +3046,54 @@
       return plan;
     }
     function builderInsertionPlan(page,moving,wantX,wantY){
+      const edge=builderValidateInsertionPlan(page,moving,builderEdgeInsertionPlan(page,moving,wantX,wantY));
+      if(edge)return edge;
       const col=builderValidateInsertionPlan(page,moving,builderAutoColumnPlan(page,moving,wantX,wantY));
       if(col)return col;
       const row=builderAutoRowPlan(page,moving,wantX,wantY);if(row)row.kind="row";
       return builderValidateInsertionPlan(page,moving,row);
+    }
+    function builderEdgeInsertionPlan(page,moving,wantX,wantY){
+      builderGridNormalize(moving);
+      const cy=wantY+moving.gridH/2, MIN_SLOT=2;
+      // Find the closest vertically relevant block. Page edge itself acts as the other neighbor.
+      const candidates=page.blocks.filter(o=>{
+        if(o.id===moving.id)return false;builderGridNormalize(o);
+        return cy>=o.gridY-2&&cy<=o.gridY+o.gridH+2;
+      });
+      if(!candidates.length)return null;
+      let best=null;
+      for(const o of candidates){
+        const leftGap=Math.abs(wantX-1),rightGap=Math.abs((wantX+moving.gridW-1)-BUILDER_COLS);
+        const leftIntent=wantX<=o.gridX+Math.max(2,Math.ceil(o.gridW*.25));
+        const rightIntent=wantX+moving.gridW>=o.gridX+o.gridW-Math.max(2,Math.ceil(o.gridW*.25));
+        if(leftIntent){
+          const score=Math.abs((wantX+moving.gridW/2)-o.gridX)+leftGap;
+          if(!best||score<best.score)best={side:"left",o,score};
+        }
+        if(rightIntent){
+          const score=Math.abs((wantX+moving.gridW/2)-(o.gridX+o.gridW))+rightGap;
+          if(!best||score<best.score)best={side:"right",o,score};
+        }
+      }
+      if(!best)return null;
+      const o=best.o,natural=Math.max(MIN_SLOT,Math.min(moving.gridW,12));
+      let depth;
+      if(best.side==="left")depth=Math.max(0,o.gridX-(wantX+moving.gridW)+1);
+      else depth=Math.max(0,wantX-(o.gridX+o.gridW)+1);
+      let desired=Math.max(MIN_SLOT,Math.min(natural,MIN_SLOT+Math.round(Math.abs(depth))));
+      desired=Math.min(desired,Math.max(MIN_SLOT,o.gridW-2));
+      if(o.gridW-desired<2)return null;
+      const placements=[];
+      if(best.side==="left"){
+        placements.push({id:moving.id,x:1,y:o.gridY,w:desired,h:moving.gridH,isMoving:true});
+        placements.push({id:o.id,x:1+desired,y:o.gridY,w:o.gridW-desired,h:o.gridH});
+      }else{
+        const newW=o.gridW-desired;
+        placements.push({id:o.id,x:o.gridX,y:o.gridY,w:newW,h:o.gridH});
+        placements.push({id:moving.id,x:BUILDER_COLS-desired+1,y:o.gridY,w:desired,h:moving.gridH,isMoving:true});
+      }
+      return{kind:"edge",placements,moving:placements.find(p=>p.isMoving),affected:[o.id]};
     }
     function builderAutoRowPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
