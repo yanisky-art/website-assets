@@ -3528,7 +3528,7 @@
         const finish=ev=>{
           try{pageResizer.releasePointerCapture(ev.pointerId)}catch(err){}
           pageResizer.removeEventListener("pointermove",move);pageResizer.removeEventListener("pointerup",finish);pageResizer.removeEventListener("pointercancel",finish);
-          activeResize=false;cancelAnimationFrame(autoFrame);pageResizer.classList.remove("resizing");builderHistoryCommit();
+          activeResize=false;cancelAnimationFrame(autoFrame);pageResizer.classList.remove("resizing");builderHistoryCommit();builderPersist();
         };
         pageResizer.addEventListener("pointermove",move);pageResizer.addEventListener("pointerup",finish);pageResizer.addEventListener("pointercancel",finish);
       };
