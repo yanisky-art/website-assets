@@ -781,7 +781,7 @@
     .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
     .page-block:has(.block-widget-frame){padding:0}
     .page-block:has(.block-widget-frame)>.block-widget-frame{border-radius:8px}
-    .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:auto}
+    .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:none}
     .page-block.selected .builder-resize-handle,.page-block.selected .page-block-tools,.page-block.selected .builder-size-readout{z-index:30}
     .page-block:has(.block-widget-frame)>.builder-size-readout{right:12px;bottom:10px}
     .builder-insert-zone{grid-column:1/-1;height:8px;border-radius:999px;position:relative;transition:.12s ease}
@@ -2974,7 +2974,7 @@
       page.blocks.forEach((block,i)=>{
         builderGridNormalize(block); const span=block.gridW,height=builderHeight(block);
       builderNormalizeLayers();
-        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=!block.locked;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
+        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
@@ -3014,20 +3014,22 @@
         el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
         el.onpointerdown=e=>{
           if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
+          e.preventDefault();
           const sx=e.clientX,sy=e.clientY;let active=false;
           const start=builderGridRect(block),gr=grid.getBoundingClientRect(),col=(gr.width-23*6)/24;
           const move=ev=>{
-            if(!active&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<7)return;
-            if(!active){active=true;grid.classList.add("grid-interacting");el.classList.add("dragging");el.querySelectorAll("iframe").forEach(x=>x.style.pointerEvents="none")}
+            if(!active&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<5)return;
+            if(!active){active=true;builderSelected=block.id;grid.classList.add("grid-interacting");el.classList.add("dragging");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="none")}
+            ev.preventDefault();
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
             block.gridX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx));block.gridY=Math.max(1,start.y+dy);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
-          const up=()=>{
-            window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);
-            if(active){grid.classList.remove("grid-interacting");el.classList.remove("dragging");el.querySelectorAll("iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
+          const up=ev=>{
+            window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
+            if(active){ev.preventDefault();grid.classList.remove("grid-interacting");el.classList.remove("dragging");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
-          window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
+          window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
         el.oncontextmenu=e=>{
           e.preventDefault();builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();
@@ -3036,9 +3038,6 @@
           [["Копировать",()=>builderCopySelection(false)],["Вырезать",()=>builderCopySelection(true)],["Вставить",()=>builderPaste()],["Дублировать",()=>builderDuplicateBlock(block.id)],["Удалить",()=>builderDeleteBlock(block.id)]].forEach(([label,fn])=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="display:block;width:100%;padding:8px 10px;border:0;background:transparent;color:#fff;text-align:left;cursor:pointer";b.onmouseenter=()=>b.style.background="#303030";b.onmouseleave=()=>b.style.background="transparent";b.onclick=()=>{m.remove();fn()};m.appendChild(b)});
           document.body.appendChild(m);const close=ev=>{if(!m.contains(ev.target)){m.remove();document.removeEventListener("pointerdown",close,true)}};setTimeout(()=>document.addEventListener("pointerdown",close,true),0);
         };
-        el.ondragstart=e=>{if(block.locked){e.preventDefault();return}if(el.classList.contains("resizing")){e.preventDefault();return}el.classList.add("dragging");grid.classList.add("is-dragging");grid.querySelectorAll(".page-block").forEach(x=>x.classList.add("drag-docking"));e.dataTransfer.setData("text/plain",block.id)};
-        el.ondragend=()=>{el.classList.remove("dragging");grid.classList.remove("is-dragging");grid.querySelectorAll(".page-block").forEach(x=>x.classList.remove("drag-docking"))};
-
         el.querySelectorAll(".builder-resize-handle").forEach(handle=>{
           handle.onpointerdown=e=>{
             if(block.locked)return;
