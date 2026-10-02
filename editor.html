@@ -840,7 +840,7 @@
     .builder-drag-ghost img{display:block;width:100%;height:100%;object-fit:contain}
     .builder-insert-preview{position:absolute;z-index:58;pointer-events:none;border:2px dashed #8aa0ff;background:rgba(111,140,255,.10);border-radius:8px;box-sizing:border-box;display:grid;place-items:center}
     .builder-insert-preview::after{content:"+";display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#8aa0ff;color:#111;font:700 20px/1 Arial}
-    .page-block.builder-preview-neighbor{transition:grid-column .12s ease}
+    .page-block.builder-preview-neighbor{transition:grid-column .12s ease,grid-row .12s ease}
     .page-block.builder-resize-neighbor{transition:grid-column .08s linear,grid-row .08s linear}
 
     /* YANISKY ADAPTIVE SCROLLBARS */
@@ -3090,12 +3090,59 @@
       return plan;
     }
     function builderInsertionPlan(page,moving,wantX,wantY){
-      const edge=builderValidateInsertionPlan(page,moving,builderEdgeInsertionPlan(page,moving,wantX,wantY));
-      if(edge)return edge;
-      const col=builderValidateInsertionPlan(page,moving,builderAutoColumnPlan(page,moving,wantX,wantY));
-      if(col)return col;
-      const row=builderAutoRowPlan(page,moving,wantX,wantY);if(row)row.kind="row";
-      return builderValidateInsertionPlan(page,moving,row);
+      builderGridNormalize(moving);
+      const mx=wantX+moving.gridW/2,my=wantY+moving.gridH/2,MIN_W=3;
+      let best=null;
+      page.blocks.forEach(o=>{
+        if(o.id===moving.id||o.type==="site-menu")return;
+        builderGridNormalize(o);
+        const left=o.gridX,right=o.gridX+o.gridW,top=o.gridY,bottom=o.gridY+o.gridH;
+        const dx=mx<left?left-mx:mx>right?mx-right:0;
+        const dy=my<top?top-my:my>bottom?my-bottom:0;
+        const distance=Math.hypot(dx,dy);
+        if(distance>Math.max(3,Math.min(7,Math.round(Math.max(o.gridW,o.gridH)*.22))))return;
+        let side;
+        if(my<top)side="top";
+        else if(my>bottom)side="bottom";
+        else if(mx<left+o.gridW*.34)side="left";
+        else if(mx>right-o.gridW*.34)side="right";
+        else return;
+        const score=distance+(side==="left"||side==="right"?Math.abs(my-(top+o.gridH/2))*.08:Math.abs(mx-(left+o.gridW/2))*.08);
+        if(!best||score<best.score)best={o,side,score};
+      });
+      if(!best)return null;
+      const o=best.o,a=builderGridRect(o),placements=[];
+      if(best.side==="left"||best.side==="right"){
+        const total=a.w;
+        if(total<MIN_W*2)return null;
+        const preferred=Math.max(MIN_W,Math.min(moving.gridW,total-MIN_W));
+        const movingW=Math.min(preferred,Math.max(MIN_W,Math.round(total*.5)));
+        const anchorW=total-movingW;
+        if(anchorW<MIN_W)return null;
+        if(best.side==="left"){
+          placements.push({id:moving.id,x:a.x,y:a.y,w:movingW,h:moving.gridH,isMoving:true});
+          placements.push({id:o.id,x:a.x+movingW,y:a.y,w:anchorW,h:a.h});
+        }else{
+          placements.push({id:o.id,x:a.x,y:a.y,w:anchorW,h:a.h});
+          placements.push({id:moving.id,x:a.x+anchorW,y:a.y,w:movingW,h:moving.gridH,isMoving:true});
+        }
+      }else{
+        const x=Math.max(1,Math.min(BUILDER_COLS-moving.gridW+1,wantX));
+        if(best.side==="top"){
+          const shift=moving.gridH+1;
+          const affected=page.blocks.filter(b=>b.id!==moving.id&&b.gridY>=a.y);
+          affected.forEach(b=>{builderGridNormalize(b);placements.push({id:b.id,x:b.gridX,y:b.gridY+shift,w:b.gridW,h:b.gridH})});
+          placements.push({id:moving.id,x,y:a.y,w:moving.gridW,h:moving.gridH,isMoving:true});
+        }else{
+          const y=a.y+a.h+1;
+          const shift=moving.gridH+1;
+          const affected=page.blocks.filter(b=>b.id!==moving.id&&b.gridY>=y);
+          affected.forEach(b=>{builderGridNormalize(b);placements.push({id:b.id,x:b.gridX,y:b.gridY+shift,w:b.gridW,h:b.gridH})});
+          placements.push({id:moving.id,x,y,w:moving.gridW,h:moving.gridH,isMoving:true});
+        }
+      }
+      const plan={kind:"simple-dock",placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
+      return builderValidateInsertionPlan(page,moving,plan);
     }
     function builderEdgeInsertionPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
@@ -3379,7 +3426,7 @@
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy+dragScrollY)/BUILDER_ROW_PX);
             const wantX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),wantY=Math.max(1,start.y+dy);
             block.gridX=wantX;block.gridY=wantY;builderAutoGrowPage(page,block);grid.style.minHeight=(builderEnsurePageRows(page)*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(builderEnsurePageRows(page)*BUILDER_ROW_PX+24)+"px";builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
-            builderClearRowPlan(grid,page);rowPlan=builderInsertionPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
+            builderClearRowPlan(grid,page);rowPlan=block.type==="site-menu"?null:builderInsertionPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
             const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit&&!rowPlan);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
