@@ -1349,6 +1349,12 @@
       }
     );
 
+    // editor.html is the dedicated Page Builder entry point.
+    // Force the builder tab active so legacy widget tabs never cover it.
+    if (!PREVIEW_MODE && (!EDITOR_QUERY || EDITOR_QUERY === "page-builder")) {
+      openTab("page-builder-tool");
+    }
+
 
     /* ===================================== */
     /* STORAGE                               */
