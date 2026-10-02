@@ -13,21 +13,25 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
-          "locked": false,
+          "locked": true,
           "opacity": 100,
           "deviceVisibility": {
             "desktop": true,
             "tablet": true,
             "mobile": true
           },
-          "height": 105
+          "height": 150,
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 5
         },
         {
           "id": "bmuqa128q2qqp",
           "type": "saved-widget",
           "title": "Black Sketchbook",
           "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_01.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_02.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_03.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_04.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_05.png%2Cassets%2Fnotebooks%2Fblack_sketchbook%2Fblack_sketchbook_06.png",
-          "span": 24,
+          "span": 16,
           "gridVersion": 24,
           "visible": true,
           "locked": false,
@@ -37,15 +41,20 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 419
+          "height": 660,
+          "gridX": 9,
+          "gridY": 6,
+          "gridW": 16,
+          "gridH": 22
         },
         {
-          "id": "bmuqa1cg2nef8",
+          "id": "bmuqzwwwk8z3p",
           "type": "saved-widget",
-          "title": "green_sketchbook_00.png",
-          "url": "https://yanisky-art.github.io/website-assets/button/?image=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_00.png&link=https%3A%2F%2Fyanisky-art.github.io%2Fwebsite-assets%2Fnotebook%2F%3Fpages%3Dassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_01.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_02.png%252Cassets%252Fnotebooks%252Fgreen_sketchbook%252Fgreen_sketchbook_03.png",
-          "span": 24,
+          "title": "Green Sketchbook",
+          "url": "https://yanisky-art.github.io/website-assets/notebook/?pages=assets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_01.png%2Cassets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_02.png%2Cassets%2Fnotebooks%2Fgreen_sketchbook%2Fgreen_sketchbook_03.png",
+          "span": 8,
           "gridVersion": 24,
+          "gridH": 20,
           "visible": true,
           "locked": false,
           "opacity": 100,
@@ -54,10 +63,14 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 461
+          "gridW": 8,
+          "gridX": 1,
+          "gridY": 6,
+          "height": 600
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "about",
@@ -71,6 +84,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqz8b0tglw5",
+          "type": "text",
+          "title": "about",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -78,11 +113,15 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5,
+          "height": 420
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "traditional",
@@ -96,6 +135,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqz8v45p2f6",
+          "type": "text",
+          "title": "traditional",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -103,11 +164,14 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "digital",
@@ -121,6 +185,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqza32tmdyd",
+          "type": "text",
+          "title": "didg",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -128,11 +214,14 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "mixed-media",
@@ -146,6 +235,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqzaey5mvel",
+          "type": "text",
+          "title": "mix",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -153,11 +264,14 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "projects",
@@ -171,6 +285,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqzat0ez0vz",
+          "type": "text",
+          "title": "projects",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -178,11 +314,63 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
+    },
+    {
+      "id": "game",
+      "name": "GAME",
+      "blocks": [
+        {
+          "id": "bmuqzsbulr0qz",
+          "type": "site-menu",
+          "title": "",
+          "text": "",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "gridW": 24,
+          "gridH": 5,
+          "gridX": 1,
+          "gridY": 1,
+          "height": 150
+        },
+        {
+          "id": "bmuqzsmx1zdy2",
+          "type": "text",
+          "title": "гаме",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "locked": false,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 6
+        }
+      ],
+      "folders": [],
+      "grid2DVersion": 1
     },
     {
       "id": "events",
@@ -196,6 +384,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 108,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqzclh9dhj0",
+          "type": "text",
+          "title": "text",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -203,11 +413,21 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [
+        {
+          "id": "gbmuqfdmzk9c44",
+          "name": "Новая папка",
+          "collapsed": false,
+          "children": []
+        }
+      ],
+      "grid2DVersion": 1
     },
     {
       "id": "contact",
@@ -221,6 +441,28 @@
           "span": 24,
           "gridVersion": 24,
           "visible": true,
+          "locked": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          },
+          "height": 120,
+          "layerName": "Меню",
+          "gridX": 1,
+          "gridY": 1,
+          "gridW": 24,
+          "gridH": 4
+        },
+        {
+          "id": "bmuqzcxpx3fo5",
+          "type": "text",
+          "title": "contact",
+          "text": "Добавь текст в настройках справа.",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
           "locked": false,
           "opacity": 100,
           "deviceVisibility": {
@@ -228,11 +470,14 @@
             "tablet": true,
             "mobile": true
           },
-          "height": 77,
-          "layerName": "Меню"
+          "gridW": 24,
+          "gridH": 14,
+          "gridX": 1,
+          "gridY": 5
         }
       ],
-      "folders": []
+      "folders": [],
+      "grid2DVersion": 1
     }
   ]
 }
