@@ -823,6 +823,10 @@
 
       /* PAGE BUILDER V5 - free 2D grid */
     .builder-grid{display:grid!important;grid-template-columns:repeat(24,minmax(0,1fr))!important;grid-auto-rows:24px!important;gap:6px!important;align-items:stretch!important;position:relative!important}
+    .builder-page-resizer{grid-column:1/-1!important;align-self:end;height:18px;position:absolute;left:0;right:0;bottom:-9px;z-index:90;cursor:ns-resize;display:flex;align-items:center;justify-content:center;touch-action:none}
+    .builder-page-resizer::before{content:"";width:72px;height:4px;border-radius:999px;background:#6f8cff;opacity:.7;transition:width .15s ease,opacity .15s ease}
+    .builder-page-resizer:hover::before,.builder-page-resizer.resizing::before{width:110px;opacity:1}
+
     .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
     .page-block .block-widget-frame{height:100%!important;min-height:0!important;user-select:none}.page-block iframe.block-widget-frame{pointer-events:none}.page-block.selected iframe.block-widget-frame{pointer-events:none}
     .builder-insert-zone{display:none!important}
@@ -3283,6 +3287,20 @@
     function builderEqualizeRow(row){row.forEach(b=>builderGridNormalize(b))}
     function builderRedistributeRow(page,block,newSpan){builderGridNormalize(block);block.gridW=Math.max(2,Math.min(BUILDER_COLS-block.gridX+1,newSpan));block.span=block.gridW}
 
+    function builderPageContentRows(page){
+      let bottom=1;(page.blocks||[]).forEach(b=>{builderGridNormalize(b);bottom=Math.max(bottom,b.gridY+b.gridH-1)});return bottom;
+    }
+    function builderEnsurePageRows(page,rows){
+      const min=Math.max(21,builderPageContentRows(page)+2);
+      page.pageRows=Math.max(min,Number(rows)||min);
+      return page.pageRows;
+    }
+    function builderAutoGrowPage(page,block){
+      builderGridNormalize(block);
+      const needed=block.gridY+block.gridH+3;
+      if(needed>builderEnsurePageRows(page))page.pageRows=needed;
+    }
+
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
       const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
@@ -3290,7 +3308,7 @@
         if(e.target.closest(".page-block")||e.target.closest(".builder-insert-zone"))return;
         if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
       };
-      const grid=document.createElement("div");grid.className="builder-grid";canvas.appendChild(grid);
+      const grid=document.createElement("div");grid.className="builder-grid";const pageRows=builderEnsurePageRows(page);grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";canvas.appendChild(grid);
 
       function zone(index){
         const z=document.createElement("div");z.className="builder-insert-zone";z.dataset.index=index;
@@ -3333,7 +3351,7 @@
             ev.preventDefault();
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
             const wantX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),wantY=Math.max(1,start.y+dy);
-            block.gridX=wantX;block.gridY=wantY;builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
+            block.gridX=wantX;block.gridY=wantY;builderAutoGrowPage(page,block);grid.style.minHeight=(builderEnsurePageRows(page)*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(builderEnsurePageRows(page)*BUILDER_ROW_PX+24)+"px";builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
             builderClearRowPlan(grid,page);rowPlan=builderInsertionPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
             const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit&&!rowPlan);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
@@ -3416,6 +3434,24 @@
         grid.appendChild(el);
       });
       grid.appendChild(zone(page.blocks.length));
+      const pageResizer=document.createElement("div");pageResizer.className="builder-page-resizer";pageResizer.title="Потяни вверх или вниз, чтобы изменить длину страницы";
+      pageResizer.onpointerdown=e=>{
+        e.preventDefault();e.stopPropagation();pageResizer.classList.add("resizing");pageResizer.setPointerCapture(e.pointerId);
+        const startY=e.clientY,startRows=builderEnsurePageRows(page);
+        const move=ev=>{
+          const delta=Math.round((ev.clientY-startY)/BUILDER_ROW_PX);
+          const minRows=Math.max(21,builderPageContentRows(page)+2);
+          page.pageRows=Math.max(minRows,startRows+delta);
+          grid.style.minHeight=(page.pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(page.pageRows*BUILDER_ROW_PX+24)+"px";
+        };
+        const finish=ev=>{
+          try{pageResizer.releasePointerCapture(ev.pointerId)}catch(err){}
+          pageResizer.removeEventListener("pointermove",move);pageResizer.removeEventListener("pointerup",finish);pageResizer.removeEventListener("pointercancel",finish);
+          pageResizer.classList.remove("resizing");builderHistoryCommit();
+        };
+        pageResizer.addEventListener("pointermove",move);pageResizer.addEventListener("pointerup",finish);pageResizer.addEventListener("pointercancel",finish);
+      };
+      grid.appendChild(pageResizer);
 
       grid.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>builderDeleteBlock(x.dataset.delete));
     }
