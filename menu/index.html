@@ -227,26 +227,6 @@
 
 
     /* =========================
-       SITE PAGE ROUTING
-       ========================= */
-    document.querySelectorAll('a[href*="?page="]').forEach((link) => {
-      link.addEventListener("click", (event) => {
-        const page = new URL(link.href, location.href).searchParams.get("page");
-        if (!page) return;
-        try {
-          const topUrl = new URL(window.top.location.href);
-          if (topUrl.pathname.endsWith("/preview.html")) {
-            event.preventDefault();
-            topUrl.searchParams.set("page", page);
-            topUrl.searchParams.set("preview", Date.now().toString());
-            window.top.location.href = topUrl.toString();
-          }
-        } catch (e) {}
-      });
-    });
-
-
-    /* =========================
        LANGUAGE
        ========================= */
 
@@ -849,6 +829,26 @@
 
 
   <script>
+
+    /* =========================
+       SITE PAGE ROUTING
+       ========================= */
+    document.querySelectorAll('a[href*="?page="]').forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const page = new URL(link.href, location.href).searchParams.get("page");
+        if (!page) return;
+        try {
+          const topUrl = new URL(window.top.location.href);
+          if (topUrl.pathname.endsWith("/preview.html")) {
+            event.preventDefault();
+            topUrl.searchParams.set("page", page);
+            topUrl.searchParams.set("preview", Date.now().toString());
+            window.top.location.href = topUrl.toString();
+          }
+        } catch (e) {}
+      });
+    });
+
 
     /* =========================
        ELEMENTS
