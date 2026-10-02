@@ -2987,6 +2987,51 @@
       n.gridX=plan.p.x;n.gridY=plan.p.y;n.gridW=plan.p.w;n.gridH=plan.p.h;n.span=n.gridW;n.gridVersion=24;
       if(n.height)n.height=n.gridH*BUILDER_ROW_PX;
     }
+    function builderAutoColumnPlan(page,moving,wantX,wantY){
+      builderGridNormalize(moving);const mx=wantX+moving.gridW/2,my=wantY+moving.gridH/2;
+      const aligned=page.blocks.filter(o=>{
+        if(o.id===moving.id)return false;builderGridNormalize(o);
+        const overlap=Math.min(wantX+moving.gridW,o.gridX+o.gridW)-Math.max(wantX,o.gridX);
+        return overlap>=Math.max(1,Math.min(moving.gridW,o.gridW)*.35);
+      });
+      if(!aligned.length)return null;
+      // Anchor is the horizontally aligned block closest to the pointer vertically.
+      aligned.sort((a,b)=>Math.abs(my-(a.gridY+a.gridH/2))-Math.abs(my-(b.gridY+b.gridH/2)));
+      const anchor=aligned[0],ax=anchor.gridX,aw=anchor.gridW;
+      // A column consists only of blocks substantially sharing this x-band.
+      const col=page.blocks.filter(o=>{
+        if(o.id===moving.id)return false;builderGridNormalize(o);
+        const overlap=Math.min(ax+aw,o.gridX+o.gridW)-Math.max(ax,o.gridX);
+        return overlap>=Math.max(1,Math.min(aw,o.gridW)*.55);
+      }).sort((a,b)=>a.gridY-b.gridY);
+      if(!col.length||col.length>=6)return null;
+      // Prefer vertical intent only when pointer is close to a top/bottom edge or in a vertical gap.
+      const aTop=anchor.gridY,aBottom=anchor.gridY+anchor.gridH;
+      const verticalDistance=Math.min(Math.abs(my-aTop),Math.abs(my-aBottom));
+      const horizontalCenterDistance=Math.abs(mx-(anchor.gridX+anchor.gridW/2));
+      if(verticalDistance>Math.max(4,moving.gridH*.65)&&horizontalCenterDistance>Math.max(2,aw*.35))return null;
+
+      let insert=0;while(insert<col.length&&my>col[insert].gridY+col[insert].gridH/2)insert++;
+      const desiredH=Math.max(3,Math.min(moving.gridH,10));
+      const GAP=1;
+      // Keep the column's current x/width. New widget uses the narrower of its own width and column width.
+      const slotW=Math.max(2,Math.min(moving.gridW,aw)),slotX=Math.max(1,Math.min(BUILDER_COLS-slotW+1,Math.round(anchor.gridX+(aw-slotW)/2)));
+      let y=col.length?col[0].gridY:wantY;const placements=[];
+      for(let i=0;i<=col.length;i++){
+        if(i===insert){placements.push({id:moving.id,x:slotX,y,w:slotW,h:desiredH,isMoving:true});y+=desiredH+GAP}
+        if(i<col.length){const o=col[i];placements.push({id:o.id,x:o.gridX,y,w:o.gridW,h:o.gridH});y+=o.gridH+GAP}
+      }
+      // Reject if the proposed stack collides with blocks outside this column.
+      const ids=new Set(placements.map(p=>p.id));
+      const outsiders=page.blocks.filter(o=>!ids.has(o.id));
+      if(placements.some(p=>outsiders.some(o=>builderGridCollides({gridX:p.x,gridY:p.y,gridW:p.w,gridH:p.h,span:p.w,gridVersion:24},o))))return null;
+      return{kind:"column",placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
+    }
+    function builderInsertionPlan(page,moving,wantX,wantY){
+      const col=builderAutoColumnPlan(page,moving,wantX,wantY);
+      if(col)return col;
+      const row=builderAutoRowPlan(page,moving,wantX,wantY);if(row)row.kind="row";return row;
+    }
     function builderAutoRowPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
       const centerY=wantY+moving.gridH/2;
@@ -3048,22 +3093,22 @@
       if(!plan?.moving)return;
       const p=plan.moving,v=document.createElement("i");v.className="builder-insert-preview";
       v.style.gridColumn=p.x+"/span "+p.w;v.style.gridRow=p.y+"/span "+p.h;grid.appendChild(v);
-      // Preview only the affected neighbor widths. Their stored data is untouched until drop.
+      // Preview affected neighbors in 2D. Their stored data is untouched until drop.
       plan.placements.filter(p=>!p.isMoving).forEach(p=>{
         const el=grid.querySelector('.page-block[data-id="'+p.id+'"]');if(!el)return;
-        el.classList.add("builder-preview-neighbor");el.style.setProperty("--grid-x",p.x);el.style.setProperty("--grid-w",p.w);
+        el.classList.add("builder-preview-neighbor");el.style.setProperty("--grid-x",p.x);el.style.setProperty("--grid-y",p.y);el.style.setProperty("--grid-w",p.w);el.style.setProperty("--grid-h",p.h);
       });
     }
     function builderClearRowPlan(grid,page){
       grid.querySelectorAll(".builder-insert-preview").forEach(x=>x.remove());
       grid.querySelectorAll(".builder-preview-neighbor").forEach(el=>{
         el.classList.remove("builder-preview-neighbor");
-        const b=page.blocks.find(o=>o.id===el.dataset.id);if(b){el.style.setProperty("--grid-x",b.gridX);el.style.setProperty("--grid-w",b.gridW)}
+        const b=page.blocks.find(o=>o.id===el.dataset.id);if(b){el.style.setProperty("--grid-x",b.gridX);el.style.setProperty("--grid-y",b.gridY);el.style.setProperty("--grid-w",b.gridW);el.style.setProperty("--grid-h",b.gridH)}
       });
     }
     function builderApplyRowPlan(page,plan){
       if(!plan)return false;
-      plan.placements.forEach(p=>{const b=page.blocks.find(o=>o.id===p.id);if(!b)return;b.gridX=p.x;b.gridY=p.y;b.gridW=p.w;b.span=p.w;b.gridVersion=24});
+      plan.placements.forEach(p=>{const b=page.blocks.find(o=>o.id===p.id);if(!b)return;b.gridX=p.x;b.gridY=p.y;b.gridW=p.w;b.gridH=p.h;b.span=p.w;b.gridVersion=24});
       return true;
     }
     function builderNearestFreeForBlock(page,block,wantX,wantY){
@@ -3201,7 +3246,7 @@
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
             const wantX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),wantY=Math.max(1,start.y+dy);
             block.gridX=wantX;block.gridY=wantY;builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
-            builderClearRowPlan(grid,page);rowPlan=builderAutoRowPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
+            builderClearRowPlan(grid,page);rowPlan=builderInsertionPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
             const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit&&!rowPlan);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
@@ -3348,7 +3393,7 @@
             const p=builderPage();builderGridMigrate(p),col=(r.width-23*6)/24;
             incoming.gridX=Math.max(1,Math.min(BUILDER_COLS-incoming.gridW+1,Math.round((ev.clientX-r.left)/(col+6))+1-Math.floor(incoming.gridW/2)));
             incoming.gridY=Math.max(1,Math.round((ev.clientY-r.top)/BUILDER_ROW_PX)+1-Math.floor(incoming.gridH/2));
-            rowPlan=builderAutoRowPlan(p,incoming,incoming.gridX,incoming.gridY);builderShowRowPlan(grid,rowPlan);
+            rowPlan=builderInsertionPlan(p,incoming,incoming.gridX,incoming.gridY);builderShowRowPlan(grid,rowPlan);
           };
           const up=ev=>{
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);document.body.classList.remove("builder-pointer-drag");ghost?.remove();
