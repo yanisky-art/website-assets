@@ -663,7 +663,7 @@
     .builder-pages,.builder-blocks{display:flex;flex-direction:column;gap:7px}
     .builder-page,.builder-block{appearance:none;width:100%;border:1px solid transparent;border-radius:8px;background:transparent;color:inherit;text-align:left;padding:9px 10px;font:inherit;font-size:13px;cursor:pointer}
     .builder-page:hover,.builder-block:hover{background:#f5f5f5}.builder-page.active{background:#eee;font-weight:700}
-    .builder-block{border-color:#ddd;background:#fafafa}.builder-block small{display:block;opacity:.5;margin-top:3px}
+    .builder-block{border-color:#ddd;background:#fafafa}.builder-block small{display:block;opacity:.5;margin-top:3px}.builder-block[draggable="true"]{cursor:grab}.builder-block[draggable="true"]:active{cursor:grabbing;opacity:.7}.builder-block.drag-source{outline:2px solid #6f8cff;outline-offset:2px}
     .builder-main{min-width:0;background:#f5f5f5;display:flex;flex-direction:column}
     .builder-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #ddd;background:#fff;flex-wrap:wrap}
     .builder-toolbar-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -3117,7 +3117,7 @@
         z.ondrop=e=>{
           e.preventDefault();e.stopPropagation();z.classList.remove("active");
           const raw=e.dataTransfer.getData("application/json");
-          if(raw){try{const data=JSON.parse(raw);if(data.kind==="widget"){builderInsertWidget(data.widget,index);return}}catch(err){}}
+          if(raw){try{const data=JSON.parse(raw);if(data.kind==="widget"){builderInsertWidget(data.widget,index);return}if(data.kind==="block"){builderInsertBlock(data.type,index);return}}catch(err){}}
           const from=e.dataTransfer.getData("text/plain");if(!from)return;
           const old=page.blocks.findIndex(x=>x.id===from);if(old<0)return;
           const [m]=page.blocks.splice(old,1);let target=index;if(old<index)target--;page.blocks.splice(Math.max(0,target),0,m);builderRenderCanvas();
@@ -3128,7 +3128,7 @@
       if(!page.blocks.length){
         const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
         empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
-        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0)}catch(err){}}};
+        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0);if(data.kind==="block")builderInsertBlock(data.type,0)}catch(err){}}};
         grid.appendChild(empty);return;
       }
 
@@ -3245,6 +3245,19 @@
       });
     }
 
+    function builderMakeBlock(type){
+      const b={id:builderUid(),type,title:"",text:"",span:24,gridVersion:24,visible:true,locked:false,opacity:100,deviceVisibility:{desktop:true,tablet:true,mobile:true}};
+      if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
+      if(type==="image")b.title="Изображение";
+      if(type==="button"){b.title="Кнопка";b.text="Открыть"}
+      return b;
+    }
+    function builderInsertBlock(type,atIndex=null){
+      const b=builderMakeBlock(type),blocks=builderPage().blocks;
+      if(atIndex===null)blocks.push(b);else blocks.splice(Math.max(0,atIndex),0,b);
+      builderSelected=b.id;builderRender();return b;
+    }
+
     function builderInsertWidget(w,atIndex=null){
       const block={id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:24,gridVersion:24};
       const blocks=builderPage().blocks;
@@ -3264,7 +3277,7 @@
       canvas.addEventListener("drop",e=>{
         const raw=e.dataTransfer.getData("application/json");if(!raw)return;
         e.preventDefault();e.stopPropagation();canvas.classList.remove("builder-drop-ready");
-        try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget)}catch(err){}
+        try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget);if(data.kind==="block")builderInsertBlock(data.type)}catch(err){}
       });
     }
 
@@ -3302,13 +3315,16 @@
     });
     builderLoad();
 
-    document.querySelectorAll("[data-builder-add]").forEach(btn=>btn.addEventListener("click",()=>{
-      const type=btn.dataset.builderAdd,b={id:builderUid(),type,title:"",text:"",span:24,gridVersion:24};
-      if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
-      if(type==="image")b.title="Изображение";
-      if(type==="button"){b.title="Кнопка";b.text="Открыть"}
-      builderPage().blocks.push(b);builderSelected=b.id;builderRender();
-    }));
+    document.querySelectorAll("[data-builder-add]").forEach(btn=>{
+      btn.draggable=true;
+      btn.addEventListener("click",()=>builderInsertBlock(btn.dataset.builderAdd));
+      btn.addEventListener("dragstart",e=>{
+        btn.classList.add("drag-source");
+        e.dataTransfer.effectAllowed="copy";
+        e.dataTransfer.setData("application/json",JSON.stringify({kind:"block",type:btn.dataset.builderAdd}));
+      });
+      btn.addEventListener("dragend",()=>btn.classList.remove("drag-source"));
+    });
     document.querySelectorAll("[data-builder-device]").forEach(btn=>btn.addEventListener("click",()=>{
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
