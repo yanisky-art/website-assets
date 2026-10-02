@@ -227,6 +227,26 @@
 
 
     /* =========================
+       SITE PAGE ROUTING
+       ========================= */
+    document.querySelectorAll('a[href*="?page="]').forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const page = new URL(link.href, location.href).searchParams.get("page");
+        if (!page) return;
+        try {
+          const topUrl = new URL(window.top.location.href);
+          if (topUrl.pathname.endsWith("/preview.html")) {
+            event.preventDefault();
+            topUrl.searchParams.set("page", page);
+            topUrl.searchParams.set("preview", Date.now().toString());
+            window.top.location.href = topUrl.toString();
+          }
+        } catch (e) {}
+      });
+    });
+
+
+    /* =========================
        LANGUAGE
        ========================= */
 
@@ -585,7 +605,7 @@
 
     <a
       class="site-logo"
-      href="../?page=home"
+      href="../index.html?page=home"
       target="_top"
     >
       YANISKY
@@ -649,7 +669,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=traditional"
+            href="../index.html?page=traditional"
             target="_top"
             data-en="TRADITIONAL"
             data-ru="ТРАДИЦИОННОЕ ИСКУССТВО"
@@ -660,7 +680,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=digital"
+            href="../index.html?page=digital"
             target="_top"
             data-en="DIGITAL"
             data-ru="ЦИФРОВОЕ ИСКУССТВО"
@@ -671,7 +691,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=mixed-media"
+            href="../index.html?page=mixed-media"
             target="_top"
             data-en="MIXED MEDIA"
             data-ru="СМЕШАННЫЕ ТЕХНИКИ"
@@ -713,7 +733,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=game"
+            href="../index.html?page=game"
             target="_top"
             data-en="GAMES"
             data-ru="ИГРЫ"
@@ -755,7 +775,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=events"
+            href="../index.html?page=events"
             target="_top"
             data-en="EXHIBITIONS & OPEN CALLS"
             data-ru="ВЫСТАВКИ & OPEN CALLS"
@@ -766,7 +786,7 @@
 
           <a
             class="dropdown-link"
-            href="../?page=events"
+            href="../index.html?page=events"
             target="_top"
             data-en="GAME JAMS"
             data-ru="GAME JAMS"
@@ -783,7 +803,7 @@
 
       <a
         class="nav-link"
-        href="../?page=about"
+        href="../index.html?page=about"
         target="_top"
         data-en="ABOUT / CONTACT"
         data-ru="ОБО МНЕ / КОНТАКТЫ"
