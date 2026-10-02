@@ -3036,7 +3036,11 @@
     const BUILDER_HISTORY_LIMIT=15;
     let builderUndoStack=[],builderRedoStack=[],builderHistoryApplying=false,builderHistoryLast="";
     let builderSelectedFolder=null;
+    const BUILDER_CLIPBOARD_KEY="yaniskyPageBuilderClipboard";
     let builderClipboard=null;
+    function builderSaveClipboard(data){builderClipboard=data;try{sessionStorage.setItem(BUILDER_CLIPBOARD_KEY,JSON.stringify(data))}catch(e){}}
+    function builderLoadClipboard(){if(builderClipboard)return builderClipboard;try{builderClipboard=JSON.parse(sessionStorage.getItem(BUILDER_CLIPBOARD_KEY)||"null")}catch(e){builderClipboard=null}return builderClipboard}
+    function builderClearClipboard(){builderClipboard=null;try{sessionStorage.removeItem(BUILDER_CLIPBOARD_KEY)}catch(e){}}
     function builderSnapshot(){return JSON.stringify(builderState)}
     function builderHistoryInit(){builderHistoryLast=builderSnapshot();builderUpdateHistoryButtons()}
     function builderHistoryCommit(){
@@ -3083,24 +3087,24 @@
       if(builderSelectedFolder){
         const g=(p.folders||[]).find(x=>x.id===builderSelectedFolder);if(!g)return;
         const blocks=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean).map(b=>structuredClone(b));
-        builderClipboard={kind:"folder",folder:structuredClone(g),blocks,cut,sourcePage:p.id};
+        builderSaveClipboard({kind:"folder",folder:structuredClone(g),blocks,cut,sourcePage:p.id});
         if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;builderRender()}
         return;
       }
       const b=builderSelectedBlock();if(!b)return;
-      builderClipboard={kind:"block",block:structuredClone(b),cut,sourcePage:p.id};
+      builderSaveClipboard({kind:"block",block:structuredClone(b),cut,sourcePage:p.id});
       if(cut)builderDeleteBlock(b.id);
     }
     function builderPaste(){
-      if(!builderClipboard)return;const p=builderPage();p.folders=p.folders||[];
-      if(builderClipboard.kind==="block"){
-        const b=structuredClone(builderClipboard.block);b.id=builderUid();b.layerName=builderLayerName(b);p.blocks.push(b);builderSelected=b.id;builderSelectedFolder=null;
-      }else if(builderClipboard.kind==="folder"){
-        const idMap=new Map(),copies=builderClipboard.blocks.map(src=>{const b=structuredClone(src),old=b.id;b.id=builderUid();idMap.set(old,b.id);return b});
-        const g=structuredClone(builderClipboard.folder);g.id="g"+builderUid();g.name=(g.name||"Папка")+" копия";g.children=(g.children||[]).map(id=>idMap.get(id)).filter(Boolean);
+      const clip=builderLoadClipboard();if(!clip)return;const p=builderPage();p.folders=p.folders||[];
+      if(clip.kind==="block"){
+        const b=structuredClone(clip.block);b.id=builderUid();b.layerName=builderLayerName(b);p.blocks.push(b);builderSelected=b.id;builderSelectedFolder=null;
+      }else if(clip.kind==="folder"){
+        const idMap=new Map(),copies=clip.blocks.map(src=>{const b=structuredClone(src),old=b.id;b.id=builderUid();idMap.set(old,b.id);return b});
+        const g=structuredClone(clip.folder);g.id="g"+builderUid();g.name=(g.name||"Папка")+" копия";g.children=(g.children||[]).map(id=>idMap.get(id)).filter(Boolean);
         p.blocks.push(...copies);p.folders.push(g);builderSelected=null;builderSelectedFolder=g.id;
       }
-      if(builderClipboard.cut)builderClipboard=null;
+      if(clip.cut)builderClearClipboard();
       builderRender();
     }
     function builderRenderLayers(){
@@ -3395,7 +3399,7 @@
       const tag=(e.target?.tagName||"").toLowerCase();if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="c"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="x"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(true);return}
-      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="v"&&builderClipboard){e.preventDefault();builderPaste();return}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="v"&&builderLoadClipboard()){e.preventDefault();builderPaste();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();if(e.shiftKey)builderRedo();else builderUndo();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();builderRedo();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);builderPaste()}
