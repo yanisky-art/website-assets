@@ -3027,10 +3027,29 @@
       if(placements.some(p=>outsiders.some(o=>builderGridCollides({gridX:p.x,gridY:p.y,gridW:p.w,gridH:p.h,span:p.w,gridVersion:24},o))))return null;
       return{kind:"column",placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
     }
+    function builderValidateInsertionPlan(page,moving,plan){
+      if(!plan?.placements?.length)return null;
+      const plannedIds=new Set(plan.placements.map(p=>p.id));
+      const rects=plan.placements.map(p=>({id:p.id,x:p.x,y:p.y,w:p.w,h:p.h}));
+      // 1. Every proposed rectangle must be valid and inside the horizontal page grid.
+      if(rects.some(r=>r.x<1||r.y<1||r.w<1||r.h<1||r.x+r.w-1>BUILDER_COLS))return null;
+      // 2. Planned blocks may not overlap each other.
+      for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+        const a=rects[i],b=rects[j];
+        if(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y)return null;
+      }
+      // 3. The complete planned result may not overlap any untouched block.
+      const untouched=page.blocks.filter(o=>o.id!==moving.id&&!plannedIds.has(o.id)).map(o=>builderGridRect(o));
+      for(const a of rects)for(const b of untouched){
+        if(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y)return null;
+      }
+      return plan;
+    }
     function builderInsertionPlan(page,moving,wantX,wantY){
-      const col=builderAutoColumnPlan(page,moving,wantX,wantY);
+      const col=builderValidateInsertionPlan(page,moving,builderAutoColumnPlan(page,moving,wantX,wantY));
       if(col)return col;
-      const row=builderAutoRowPlan(page,moving,wantX,wantY);if(row)row.kind="row";return row;
+      const row=builderAutoRowPlan(page,moving,wantX,wantY);if(row)row.kind="row";
+      return builderValidateInsertionPlan(page,moving,row);
     }
     function builderAutoRowPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
@@ -3108,6 +3127,8 @@
     }
     function builderApplyRowPlan(page,plan){
       if(!plan)return false;
+      const movingId=plan.moving?.id, moving=page.blocks.find(o=>o.id===movingId)||{id:movingId};
+      if(!builderValidateInsertionPlan(page,moving,plan))return false;
       plan.placements.forEach(p=>{const b=page.blocks.find(o=>o.id===p.id);if(!b)return;b.gridX=p.x;b.gridY=p.y;b.gridW=p.w;b.gridH=p.h;b.span=p.w;b.gridVersion=24});
       return true;
     }
@@ -3253,7 +3274,7 @@
           const up=ev=>{
             try{el.releasePointerCapture(pointerId)}catch(err){}
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan)builderApplyRowPlan(page,rowPlan);else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();builderClearRowPlan(grid,page);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan){if(!builderApplyRowPlan(page,rowPlan)){block.gridX=start.x;block.gridY=start.y}}else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();builderClearRowPlan(grid,page);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
@@ -3403,7 +3424,9 @@
             const p=builderPage();builderGridMigrate(p);
             if(!rowPlan&&p.blocks.some(o=>builderGridCollides(incoming,o)))return;
             p.blocks.push(incoming);
-            if(rowPlan)builderApplyRowPlan(p,rowPlan);
+            if(rowPlan&&!builderApplyRowPlan(p,rowPlan)){p.blocks=p.blocks.filter(o=>o.id!==incoming.id);return}
+            const finalOverlap=p.blocks.some(o=>o.id!==incoming.id&&builderGridCollides(incoming,o));
+            if(finalOverlap){p.blocks=p.blocks.filter(o=>o.id!==incoming.id);return}
             builderSelected=incoming.id;builderSelectedFolder=null;builderRender();builderHistoryCommit();
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
