@@ -825,6 +825,9 @@
     .page-block .block-widget-frame{height:100%!important;min-height:0!important}
     .builder-insert-zone{display:none!important}
     .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.10) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.10) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
+    .builder-smart-guide{position:absolute;z-index:60;pointer-events:none;background:#8aa0ff;box-shadow:0 0 0 1px rgba(138,160,255,.15)}
+    .builder-smart-guide.v{top:0;bottom:0;width:1px}.builder-smart-guide.h{left:0;right:0;height:1px}
+    .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
 </style>
 </head>
 
@@ -2936,6 +2939,34 @@
       }
       incoming.gridX=x;incoming.gridY=y;incoming.span=incoming.gridW;
     }
+    function builderGridAutoHeight(block,px){
+      if(block.height)return;
+      const rows=Math.max(3,Math.ceil(Number(px||90)/BUILDER_ROW_PX));
+      if(rows!==block.gridH){block.gridH=rows;block.autoGridH=rows}
+    }
+    function builderClearGuides(grid){grid.querySelectorAll(".builder-smart-guide").forEach(x=>x.remove())}
+    function builderGuide(grid,axis,value){
+      const g=document.createElement("i");g.className="builder-smart-guide "+(axis==="x"?"v":"h");
+      if(axis==="x")g.style.left=((value-1)/BUILDER_COLS*100)+"%";else g.style.top=((value-1)*BUILDER_ROW_PX)+"px";
+      grid.appendChild(g);
+    }
+    function builderSnapPosition(page,block,x,y,grid){
+      builderClearGuides(grid);
+      const w=block.gridW,h=block.gridH,threshold=1;
+      let bestX=x,bestY=y,dx=99,dy=99,gx=null,gy=null;
+      page.blocks.forEach(o=>{
+        if(o.id===block.id)return;builderGridNormalize(o);
+        const xs=[o.gridX,o.gridX+o.gridW,Math.round(o.gridX+o.gridW/2)];
+        const mineX=[x,x+w,Math.round(x+w/2)];
+        xs.forEach(a=>mineX.forEach((m,i)=>{const d=Math.abs(a-m);if(d<=threshold&&d<dx){dx=d;bestX=x+(a-m);gx=a}}));
+        const ys=[o.gridY,o.gridY+o.gridH,Math.round(o.gridY+o.gridH/2)];
+        const mineY=[y,y+h,Math.round(y+h/2)];
+        ys.forEach(a=>mineY.forEach(m=>{const d=Math.abs(a-m);if(d<=threshold&&d<dy){dy=d;bestY=y+(a-m);gy=a}}));
+      });
+      bestX=Math.max(1,Math.min(BUILDER_COLS-w+1,bestX));bestY=Math.max(1,bestY);
+      if(gx!==null)builderGuide(grid,"x",gx);if(gy!==null)builderGuide(grid,"y",gy);
+      return{x:bestX,y:bestY};
+    }
     function builderRowForBlock(page,block){return page.blocks.filter(b=>{builderGridNormalize(b);return b.gridY===block.gridY})}
     function builderEqualizeRow(row){row.forEach(b=>builderGridNormalize(b))}
     function builderRedistributeRow(page,block,newSpan){builderGridNormalize(block);block.gridW=Math.max(2,Math.min(BUILDER_COLS-block.gridX+1,newSpan));block.span=block.gridW}
@@ -3022,12 +3053,14 @@
             if(!active){active=true;builderSelected=block.id;grid.classList.add("grid-interacting");el.classList.add("dragging");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="none")}
             ev.preventDefault();
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
-            block.gridX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx));block.gridY=Math.max(1,start.y+dy);
+            const rawX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),rawY=Math.max(1,start.y+dy);
+            const snapped=builderSnapPosition(page,block,rawX,rawY,grid);block.gridX=snapped.x;block.gridY=snapped.y;
+            const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
           const up=ev=>{
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();grid.classList.remove("grid-interacting");el.classList.remove("dragging");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();builderClearGuides(grid);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
@@ -3173,7 +3206,7 @@
       return b;
     }
     function builderMakeWidgetBlock(w){
-      return {id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:24,gridVersion:24,visible:true,locked:false,opacity:100,deviceVisibility:{desktop:true,tablet:true,mobile:true}};
+      return {id:builderUid(),type:w.type==="price-calculator"?"price-calculator":"saved-widget",title:w.name||"Widget",url:w.url||"",span:24,gridVersion:24,gridH:10,visible:true,locked:false,opacity:100,deviceVisibility:{desktop:true,tablet:true,mobile:true}};
     }
     function builderInsertBlock(type,atIndex=null){
       const b=builderMakeBlock(type),blocks=builderPage().blocks;
@@ -3232,10 +3265,12 @@
       document.querySelectorAll(".block-widget-frame").forEach(frame=>{
         if(frame.contentWindow===e.source){
           const h=Math.max(72,Math.ceil(Number(d.height)));
-          frame.style.height=h+"px";
-          frame.style.minHeight=h+"px";
-          const block=frame.closest(".page-block");
-          if(block && !builderHeight(builderPage().blocks.find(b=>b.id===block.dataset.id))) block.style.setProperty("--builder-height",h+"px");
+          const blockEl=frame.closest(".page-block"),dataBlock=blockEl?builderPage().blocks.find(b=>b.id===blockEl.dataset.id):null;
+          if(dataBlock&&!builderHeight(dataBlock)){
+            builderGridAutoHeight(dataBlock,h);
+            blockEl.style.setProperty("--grid-h",dataBlock.gridH);
+            frame.style.height="100%";frame.style.minHeight="0";
+          }else{frame.style.height=h+"px";frame.style.minHeight=h+"px"}
         }
       });
     });
