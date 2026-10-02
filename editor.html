@@ -3612,7 +3612,12 @@
       // Preview must always reflect the live editor state, even before a manual save.
       // Do not route preview through builderPersist(): the strict collision guard is for
       // durable saves/publishing and must not prevent a read-only preview.
-      try{localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState))}
+      try{
+        localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState));
+        const sourceGrid=document.querySelector(".builder-grid");
+        const sourceWidth=sourceGrid?.getBoundingClientRect().width||0;
+        if(sourceWidth>0)localStorage.setItem("yaniskyPreviewSourceWidth",String(sourceWidth));
+      }
       catch(err){alert("Не удалось подготовить предпросмотр.");return}
       const u=new URL("./preview.html",window.location.href);
       u.searchParams.set("page",builderPage().id);
