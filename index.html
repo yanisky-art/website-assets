@@ -1213,6 +1213,7 @@
             <div class="builder-toolbar-group">
               <button class="builder-mini" id="builder-undo" type="button" title="Отменить последнее действие (Ctrl/Cmd+Z)" disabled>↶ Отменить</button>
               <button class="builder-mini" id="builder-redo" type="button" title="Вернуть отменённое действие (Ctrl/Cmd+Shift+Z)" disabled>↷ Вернуть</button>
+              <button class="builder-mini" id="builder-paste-top" type="button" title="Вставить скопированный блок (Ctrl/Cmd+V)">⎘ Вставить</button>
               <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
               <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
@@ -3193,12 +3194,12 @@
       page.blocks.forEach((block,i)=>{
         const span=builderSpan(block),height=builderHeight(block);
       builderNormalizeLayers();
-      const layerHtml='<div class="builder-layer-menu"><button class="builder-mini" id="builder-duplicate-layer" type="button">Дублировать</button><button class="builder-mini" id="builder-toggle-lock" type="button">'+(block.locked?"Разблокировать":"Заблокировать")+'</button><button class="builder-mini" id="builder-delete-layer" type="button">Удалить</button></div><div class="inspector-field"><label>Прозрачность</label><div class="builder-opacity-row"><input id="builder-opacity" type="range" min="0" max="100" value="'+(block.opacity??100)+'"><span id="builder-opacity-value">'+(block.opacity??100)+'%</span></div></div><div class="inspector-field"><label>Видимость по устройствам</label><div class="builder-width-options">'+["desktop","tablet","mobile"].map(d=>'<button type="button" class="builder-width-btn'+(block.deviceVisibility?.[d]!==false?" active":"")+'" data-device-visible="'+d+'">'+({desktop:"Desktop",tablet:"Tablet",mobile:"Mobile"})[d]+'</button>').join("")+'</div></div>';
+      const layerHtml='<div class="builder-layer-menu"><button class="builder-mini" id="builder-copy-layer" type="button" title="Ctrl/Cmd+C">Копировать</button><button class="builder-mini" id="builder-cut-layer" type="button" title="Ctrl/Cmd+X">Вырезать</button><button class="builder-mini" id="builder-paste-layer" type="button" title="Ctrl/Cmd+V">Вставить</button><button class="builder-mini" id="builder-duplicate-layer" type="button">Дублировать</button><button class="builder-mini" id="builder-toggle-lock" type="button">'+(block.locked?"Разблокировать":"Заблокировать")+'</button><button class="builder-mini" id="builder-delete-layer" type="button">Удалить</button></div><div class="inspector-field"><label>Прозрачность</label><div class="builder-opacity-row"><input id="builder-opacity" type="range" min="0" max="100" value="'+(block.opacity??100)+'"><span id="builder-opacity-value">'+(block.opacity??100)+'%</span></div></div><div class="inspector-field"><label>Видимость по устройствам</label><div class="builder-width-options">'+["desktop","tablet","mobile"].map(d=>'<button type="button" class="builder-width-btn'+(block.deviceVisibility?.[d]!==false?" active":"")+'" data-device-visible="'+d+'">'+({desktop:"Desktop",tablet:"Tablet",mobile:"Mobile"})[d]+'</button>').join("")+'</div></div>';
         const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=!block.locked;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool" data-up="'+i+'" type="button">↑</button><button class="block-tool" data-down="'+i+'" type="button">↓</button><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
-        el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderRenderCanvas();builderRenderInspector()};
+        el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
         el.ondragstart=e=>{if(block.locked){e.preventDefault();return}if(el.classList.contains("resizing")){e.preventDefault();return}el.classList.add("dragging");e.dataTransfer.setData("text/plain",block.id)};
         el.ondragend=()=>el.classList.remove("dragging");
 
@@ -3266,6 +3267,9 @@
       }
       host.innerHTML=body+layerHtml+widthHtml;
       host.querySelectorAll("[data-span]").forEach(btn=>btn.onclick=()=>builderSetSpan(block,+btn.dataset.span));
+      document.getElementById("builder-copy-layer")?.addEventListener("click",()=>{builderSelected=block.id;builderCopySelection(false)});
+      document.getElementById("builder-cut-layer")?.addEventListener("click",()=>{builderSelected=block.id;builderCopySelection(true)});
+      document.getElementById("builder-paste-layer")?.addEventListener("click",()=>builderPaste());
       document.getElementById("builder-duplicate-layer")?.addEventListener("click",()=>builderDuplicateBlock(block.id));
       document.getElementById("builder-toggle-lock")?.addEventListener("click",()=>builderToggleLock(block.id));
       document.getElementById("builder-delete-layer")?.addEventListener("click",()=>builderDeleteBlock(block.id));
@@ -3388,6 +3392,7 @@
     });
     document.getElementById("builder-undo")?.addEventListener("click",builderUndo);
     document.getElementById("builder-redo")?.addEventListener("click",builderRedo);
+    document.getElementById("builder-paste-top")?.addEventListener("click",()=>builderPaste());
     document.querySelectorAll("[data-builder-device]").forEach(btn=>btn.addEventListener("click",()=>{
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
@@ -3404,7 +3409,7 @@
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();builderRedo();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&(builderSelected||builderSelectedFolder)){e.preventDefault();builderCopySelection(false);builderPaste()}
       if((e.key==="Delete"||e.key==="Backspace")&&builderSelected){e.preventDefault();builderDeleteBlock(builderSelected)}
-    });
+   },true);;
     document.addEventListener("keydown",e=>{
       if(e.key!=="Tab" || PREVIEW_MODE)return;
       const tag=(e.target?.tagName||"").toLowerCase();
