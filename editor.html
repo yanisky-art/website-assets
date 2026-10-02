@@ -778,7 +778,7 @@
     .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
     .page-block:has(.block-widget-frame){padding:0}
     .page-block:has(.block-widget-frame)>.block-widget-frame{border-radius:8px}
-    .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:none}
+    .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:auto;cursor:grab}.page-block.dragging:has(.block-widget-frame)::after{cursor:grabbing}
     .page-block.selected .builder-resize-handle,.page-block.selected .page-block-tools,.page-block.selected .builder-size-readout{z-index:30}
     .page-block:has(.block-widget-frame)>.builder-size-readout{right:12px;bottom:10px}
     .builder-insert-zone{grid-column:1/-1;height:8px;border-radius:999px;position:relative;transition:.12s ease}
@@ -826,6 +826,7 @@
     .builder-smart-guide.v{top:0;bottom:0;width:1px}.builder-smart-guide.h{left:0;right:0;height:1px}
     .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
     .builder-dock-preview{position:absolute;z-index:55;pointer-events:none;border:2px dashed #8aa0ff;background:rgba(111,140,255,.10);border-radius:8px;box-sizing:border-box}
+    .builder-row-preview{position:absolute;z-index:54;pointer-events:none;border:2px solid #8aa0ff;background:rgba(111,140,255,.07);border-radius:8px;box-sizing:border-box}
 </style>
 </head>
 
@@ -2937,6 +2938,39 @@
       }
       incoming.gridX=x;incoming.gridY=y;incoming.span=incoming.gridW;
     }
+    function builderAutoRowPlan(page,moving,wantX,wantY){
+      builderGridNormalize(moving);
+      const myCenter=wantY+moving.gridH/2;
+      const candidates=page.blocks.filter(o=>{
+        if(o.id===moving.id)return false;builderGridNormalize(o);
+        const top=o.gridY,bottom=o.gridY+o.gridH;
+        return myCenter>=top-2&&myCenter<=bottom+2;
+      });
+      if(!candidates.length)return null;
+      // Only make a row when the dragged block is actually touching/entering that row horizontally,
+      // or is being placed into a gap/edge next to its members.
+      const minX=Math.min(...candidates.map(o=>o.gridX)),maxX=Math.max(...candidates.map(o=>o.gridX+o.gridW));
+      if(wantX+moving.gridW<minX-2||wantX>maxX+2)return null;
+      const rowY=Math.min(wantY,...candidates.map(o=>o.gridY));
+      const ordered=[...candidates,moving].sort((a,b)=>{
+        const ax=a.id===moving.id?wantX:a.gridX,bx=b.id===moving.id?wantX:b.gridX;
+        return ax-bx;
+      });
+      const n=ordered.length;if(n>12)return null;
+      const base=Math.floor(BUILDER_COLS/n),extra=BUILDER_COLS-base*n;
+      let x=1;const placements=[];
+      ordered.forEach((o,i)=>{const w=base+(i<extra?1:0);placements.push({id:o.id,x,y:rowY,w,h:o.gridH});x+=w});
+      return{placements,rowY,rowH:Math.max(...ordered.map(o=>o.gridH)),moving:placements.find(p=>p.id===moving.id)};
+    }
+    function builderShowRowPlan(grid,plan){
+      grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());if(!plan)return;
+      plan.placements.forEach(p=>{const v=document.createElement("i");v.className="builder-row-preview";v.style.gridColumn=p.x+"/span "+p.w;v.style.gridRow=p.y+"/span "+p.h;grid.appendChild(v)});
+    }
+    function builderApplyRowPlan(page,plan){
+      if(!plan)return false;
+      plan.placements.forEach(p=>{const b=page.blocks.find(o=>o.id===p.id);if(!b)return;b.gridX=p.x;b.gridY=p.y;b.gridW=p.w;b.span=p.w;b.gridVersion=24});
+      return true;
+    }
     function builderNearestFreeForBlock(page,block,wantX,wantY){
       builderGridNormalize(block);const maxX=BUILDER_COLS-block.gridW+1;
       const valid=(x,y)=>{
@@ -3063,7 +3097,7 @@
         el.onpointerdown=e=>{
           if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
           e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(err){}
-          const pointerId=e.pointerId,sx=e.clientX,sy=e.clientY;let active=false;
+          const pointerId=e.pointerId,sx=e.clientX,sy=e.clientY;let active=false,rowPlan=null;
           const start=builderGridRect(block),gr=grid.getBoundingClientRect(),col=(gr.width-23*6)/24;
           const move=ev=>{
             if(!active&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<5)return;
@@ -3072,13 +3106,14 @@
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
             const wantX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),wantY=Math.max(1,start.y+dy);
             block.gridX=wantX;block.gridY=wantY;builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
-            const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit);
+            rowPlan=builderAutoRowPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
+            const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit&&!rowPlan);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
           const up=ev=>{
             try{el.releasePointerCapture(pointerId)}catch(err){}
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();el.dataset.justDragged="1";const free=builderNearestFreeForBlock(page,block,block.gridX,block.gridY);block.gridX=free.x;block.gridY=free.y;builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan)builderApplyRowPlan(page,rowPlan);else{const free=builderNearestFreeForBlock(page,block,block.gridX,block.gridY);block.gridX=free.x;block.gridY=free.y}builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
@@ -3374,7 +3409,8 @@
 
 
 
-  </script>
+  document.addEventListener("dragstart",e=>{if(e.target.closest?.("#page-builder-shell"))e.preventDefault()},true);
+</script>
 
 </body>
 
