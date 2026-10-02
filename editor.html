@@ -832,6 +832,7 @@
     .builder-insert-preview{position:absolute;z-index:58;pointer-events:none;border:2px dashed #8aa0ff;background:rgba(111,140,255,.10);border-radius:8px;box-sizing:border-box;display:grid;place-items:center}
     .builder-insert-preview::after{content:"+";display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#8aa0ff;color:#111;font:700 20px/1 Arial}
     .page-block.builder-preview-neighbor{transition:grid-column .12s ease}
+    .page-block.builder-resize-neighbor{transition:grid-column .08s linear,grid-row .08s linear}
 </style>
 </head>
 
@@ -2943,6 +2944,49 @@
       }
       incoming.gridX=x;incoming.gridY=y;incoming.span=incoming.gridW;
     }
+    function builderResizeNeighborPlan(page,block,dir,startRect){
+      if(!(dir.includes("e")||dir.includes("w")||dir.includes("s")||dir.includes("n")))return null;
+      builderGridNormalize(block);const b=builderGridRect(block),MIN=2;
+      const overlapsY=o=>b.y<o.y+o.h&&b.y+b.h>o.y;
+      const overlapsX=o=>b.x<o.x+o.w&&b.x+b.w>o.x;
+      let candidates=page.blocks.filter(o=>o.id!==block.id).map(o=>{builderGridNormalize(o);return o});
+      let neighbor=null,axis=null,amount=0;
+      if(dir.includes("e")){
+        candidates=candidates.filter(o=>overlapsY(builderGridRect(o))&&o.gridX>=startRect.x+startRect.w).sort((a,z)=>a.gridX-z.gridX);
+        neighbor=candidates[0]||null;if(neighbor){amount=Math.max(0,b.x+b.w-neighbor.gridX);axis="e"}
+      }else if(dir.includes("w")){
+        candidates=candidates.filter(o=>overlapsY(builderGridRect(o))&&o.gridX+o.gridW<=startRect.x).sort((a,z)=>(z.gridX+z.gridW)-(a.gridX+a.gridW));
+        neighbor=candidates[0]||null;if(neighbor){amount=Math.max(0,neighbor.gridX+neighbor.gridW-b.x);axis="w"}
+      }else if(dir.includes("s")){
+        candidates=candidates.filter(o=>overlapsX(builderGridRect(o))&&o.gridY>=startRect.y+startRect.h).sort((a,z)=>a.gridY-z.gridY);
+        neighbor=candidates[0]||null;if(neighbor){amount=Math.max(0,b.y+b.h-neighbor.gridY);axis="s"}
+      }else if(dir.includes("n")){
+        candidates=candidates.filter(o=>overlapsX(builderGridRect(o))&&o.gridY+o.gridH<=startRect.y).sort((a,z)=>(z.gridY+z.gridH)-(a.gridY+a.gridH));
+        neighbor=candidates[0]||null;if(neighbor){amount=Math.max(0,neighbor.gridY+neighbor.gridH-b.y);axis="n"}
+      }
+      if(!neighbor||amount<=0)return null;
+      const n=builderGridRect(neighbor),p={id:neighbor.id,x:n.x,y:n.y,w:n.w,h:n.h};
+      if(axis==="e"){if(n.w-amount<MIN)return{blocked:true};p.x+=amount;p.w-=amount}
+      if(axis==="w"){if(n.w-amount<MIN)return{blocked:true};p.w-=amount}
+      if(axis==="s"){if(n.h-amount<3)return{blocked:true};p.y+=amount;p.h-=amount}
+      if(axis==="n"){if(n.h-amount<3)return{blocked:true};p.h-=amount}
+      return{neighbor,p};
+    }
+    function builderPreviewResizeNeighbor(grid,plan,page){
+      grid.querySelectorAll(".builder-resize-neighbor").forEach(el=>{
+        el.classList.remove("builder-resize-neighbor");
+        const b=page.blocks.find(o=>o.id===el.dataset.id);if(b){el.style.setProperty("--grid-x",b.gridX);el.style.setProperty("--grid-y",b.gridY);el.style.setProperty("--grid-w",b.gridW);el.style.setProperty("--grid-h",b.gridH)}
+      });
+      if(!plan||plan.blocked)return;
+      const el=grid.querySelector('.page-block[data-id="'+plan.neighbor.id+'"]');if(!el)return;el.classList.add("builder-resize-neighbor");
+      el.style.setProperty("--grid-x",plan.p.x);el.style.setProperty("--grid-y",plan.p.y);el.style.setProperty("--grid-w",plan.p.w);el.style.setProperty("--grid-h",plan.p.h);
+    }
+    function builderApplyResizeNeighbor(page,plan){
+      if(!plan||plan.blocked)return;
+      const n=page.blocks.find(o=>o.id===plan.neighbor.id);if(!n)return;
+      n.gridX=plan.p.x;n.gridY=plan.p.y;n.gridW=plan.p.w;n.gridH=plan.p.h;n.span=n.gridW;n.gridVersion=24;
+      if(n.height)n.height=n.gridH*BUILDER_ROW_PX;
+    }
     function builderAutoRowPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
       const centerY=wantY+moving.gridH/2;
@@ -3180,7 +3224,7 @@
             if(block.locked)return;
             e.preventDefault();e.stopPropagation();builderSelected=block.id;el.draggable=false;el.classList.add("selected","resizing");grid.classList.add("grid-interacting");
             handle.setPointerCapture(e.pointerId);
-            const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height;
+            const dir=handle.dataset.dir,gridRect=grid.getBoundingClientRect(),startX=e.clientX,startY=e.clientY,startSpan=builderSpan(block),startHeight=el.getBoundingClientRect().height,startRect=builderGridRect(block);let resizeNeighborPlan=null;
             const col=gridRect.width/24;
             const move=ev=>{
               const dx=ev.clientX-startX,dy=ev.clientY-startY;
@@ -3197,6 +3241,17 @@
               if(dir.includes("n")){const oldBottom=block.gridY+block.gridH;block.gridH=Math.max(3,Math.round(nextHeight/BUILDER_ROW_PX));block.gridY=Math.max(1,oldBottom-block.gridH)}
               block.span=block.gridW;block.gridVersion=24;nextSpan=block.gridW;
               if(dir.includes("n")||dir.includes("s"))block.height=block.gridH*BUILDER_ROW_PX;
+              resizeNeighborPlan=builderResizeNeighborPlan(page,block,dir,startRect);
+              if(resizeNeighborPlan?.blocked){
+                // The touched neighbor reached its minimum: stop this edge instead of moving either block elsewhere.
+                if(dir.includes("e"))block.gridW=Math.max(2,block.gridW-1);
+                if(dir.includes("w")){block.gridX=Math.min(startRect.x+startRect.w-2,block.gridX+1);block.gridW=Math.max(2,block.gridW-1)}
+                if(dir.includes("s"))block.gridH=Math.max(3,block.gridH-1);
+                if(dir.includes("n")){block.gridY=Math.min(startRect.y+startRect.h-3,block.gridY+1);block.gridH=Math.max(3,block.gridH-1)}
+                block.span=block.gridW;if(block.height)block.height=block.gridH*BUILDER_ROW_PX;nextSpan=block.gridW;
+                resizeNeighborPlan=builderResizeNeighborPlan(page,block,dir,startRect);
+              }
+              builderPreviewResizeNeighbor(grid,resizeNeighborPlan,page);
 
               // CSS Grid normally anchors the block at top-left. For west/north
               // resizing, translate the live preview by exactly the change in
@@ -3214,9 +3269,10 @@
               try{handle.releasePointerCapture(ev.pointerId)}catch(err){}
               handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
               el.draggable=true;el.classList.remove("resizing");grid.classList.remove("grid-interacting");
-              // Re-render after release so temporary north/west preview offsets
-              // are cleared and the grid commits the new dimensions cleanly.
-              const overlap=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(overlap){const free=builderNearestFreeForBlock(page,block,block.gridX,block.gridY);block.gridX=free.x;block.gridY=free.y}builderRenderCanvas();builderRenderInspector();builderHistoryCommit();
+              builderApplyResizeNeighbor(page,resizeNeighborPlan);
+              grid.querySelectorAll(".builder-resize-neighbor").forEach(x=>x.classList.remove("builder-resize-neighbor"));
+              // The block being resized always keeps its position. Only the directly touched neighbor yields.
+              builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit();
             };
             handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
