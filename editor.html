@@ -3117,12 +3117,9 @@
     /* START                                 */
     /* ===================================== */
 
-    if (!PREVIEW_MODE) renderWidgets();
+    if (!PREVIEW_MODE && document.getElementById("widget-grid")) renderWidgets();
 
-    if (!PREVIEW_MODE && (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool")) {
-      document.body.classList.remove("builder-mode");
-      openTab(EDITOR_QUERY);
-    }
+
 
   </script>
 
