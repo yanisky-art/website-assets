@@ -263,7 +263,7 @@ calc();
   if(!wrap)return;
   function scaleCalculator(){
     const available=Math.max(220,document.documentElement.clientWidth);
-    const scale=Math.min(1,available/DESIGN_WIDTH);
+    const scale=available/DESIGN_WIDTH;
     wrap.style.transform='scale('+scale+')';
     document.body.style.width=available+'px';
     document.documentElement.style.overflow='hidden';
