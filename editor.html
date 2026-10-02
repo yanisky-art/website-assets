@@ -824,7 +824,7 @@
     <!-- ================================= -->
     <!-- PAGE BUILDER                      -->
     <!-- ================================= -->
-    <section class="tab-content active" id="page-builder-tool">
+    <section class="tab-content active" id="page-builder-tool" style="display:block">
       <div class="builder-shell">
         <aside class="builder-panel">
           <p class="builder-kicker">Страницы</p>
@@ -2714,12 +2714,36 @@
     }
 
     function builderLoad(){
-      try{builderState=JSON.parse(localStorage.getItem(PAGE_BUILDER_KEY))||structuredClone(builderDefault)}
-      catch(e){builderState=structuredClone(builderDefault)}
-      if(!builderState.pages?.length) builderState=structuredClone(builderDefault);
+      const raw=localStorage.getItem(PAGE_BUILDER_KEY);
+      try{
+        const parsed=raw?JSON.parse(raw):null;
+        if(parsed && Array.isArray(parsed.pages) && parsed.pages.length){
+          builderState=parsed;
+          // Keep an untouched recovery copy of the last valid browser draft.
+          if(!localStorage.getItem(PAGE_BUILDER_KEY+":recovery")) localStorage.setItem(PAGE_BUILDER_KEY+":recovery",raw);
+        }else{
+          const recovery=localStorage.getItem(PAGE_BUILDER_KEY+":recovery");
+          const restored=recovery?JSON.parse(recovery):null;
+          builderState=(restored && Array.isArray(restored.pages) && restored.pages.length)?restored:structuredClone(builderDefault);
+        }
+      }catch(e){
+        const recovery=localStorage.getItem(PAGE_BUILDER_KEY+":recovery");
+        try{const restored=recovery?JSON.parse(recovery):null;builderState=(restored&&Array.isArray(restored.pages)&&restored.pages.length)?restored:structuredClone(builderDefault)}
+        catch(_){builderState=structuredClone(builderDefault)}
+      }
+      if(!builderState.currentPage || !builderState.pages.some(p=>p.id===builderState.currentPage)) builderState.currentPage=builderState.pages[0].id;
     }
     function builderPage(){return builderState.pages.find(p=>p.id===builderState.currentPage)||builderState.pages[0]}
-    function builderPersist(){localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState))}
+    function builderPersist(){
+      if(!builderState || !Array.isArray(builderState.pages) || !builderState.pages.length) return false;
+      const next=JSON.stringify(builderState);
+      const current=localStorage.getItem(PAGE_BUILDER_KEY);
+      if(current){
+        try{const parsed=JSON.parse(current);if(parsed&&Array.isArray(parsed.pages)&&parsed.pages.length)localStorage.setItem(PAGE_BUILDER_KEY+":recovery",current)}catch(e){}
+      }
+      localStorage.setItem(PAGE_BUILDER_KEY,next);
+      return true;
+    }
     async function builderPublish(button){
       builderPersist();
       let token=sessionStorage.getItem("yaniskyGitHubPublishToken")||"";
@@ -3046,6 +3070,7 @@
       });
     });
     builderLoad();
+    console.info("[YANISKY] Page Builder restored",builderState.pages.length,"pages,",builderState.pages.reduce((n,p)=>n+(p.blocks?.length||0),0),"blocks,",getWidgets().length,"saved widgets");
     builderHistoryInit();
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>{
