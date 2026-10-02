@@ -829,6 +829,9 @@
     .builder-row-preview{position:absolute;z-index:54;pointer-events:none;border:2px solid #8aa0ff;background:rgba(111,140,255,.07);border-radius:8px;box-sizing:border-box}
     .builder-drag-ghost{position:fixed;z-index:100000;pointer-events:none;opacity:.78;transform:translate(-50%,-50%);border:1px solid #8aa0ff;border-radius:8px;background:#171717;box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden}
     .builder-drag-ghost img{display:block;width:100%;height:100%;object-fit:contain}
+    .builder-insert-preview{position:absolute;z-index:58;pointer-events:none;border:2px dashed #8aa0ff;background:rgba(111,140,255,.10);border-radius:8px;box-sizing:border-box;display:grid;place-items:center}
+    .builder-insert-preview::after{content:"+";display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#8aa0ff;color:#111;font:700 20px/1 Arial}
+    .page-block.builder-preview-neighbor{transition:grid-column .12s ease}
 </style>
 </head>
 
@@ -2942,31 +2945,53 @@
     }
     function builderAutoRowPlan(page,moving,wantX,wantY){
       builderGridNormalize(moving);
-      const myCenter=wantY+moving.gridH/2;
-      const candidates=page.blocks.filter(o=>{
+      const centerY=wantY+moving.gridH/2;
+      const row=page.blocks.filter(o=>{
         if(o.id===moving.id)return false;builderGridNormalize(o);
-        const top=o.gridY,bottom=o.gridY+o.gridH;
-        return myCenter>=top-2&&myCenter<=bottom+2;
-      });
-      if(!candidates.length)return null;
-      // Only make a row when the dragged block is actually touching/entering that row horizontally,
-      // or is being placed into a gap/edge next to its members.
-      const minX=Math.min(...candidates.map(o=>o.gridX)),maxX=Math.max(...candidates.map(o=>o.gridX+o.gridW));
-      if(wantX+moving.gridW<minX-2||wantX>maxX+2)return null;
-      const rowY=Math.min(wantY,...candidates.map(o=>o.gridY));
-      const ordered=[...candidates,moving].sort((a,b)=>{
-        const ax=a.id===moving.id?wantX:a.gridX,bx=b.id===moving.id?wantX:b.gridX;
-        return ax-bx;
-      });
-      const n=ordered.length;if(n>12)return null;
-      const base=Math.floor(BUILDER_COLS/n),extra=BUILDER_COLS-base*n;
+        return centerY>=o.gridY-2&&centerY<=o.gridY+o.gridH+2;
+      }).sort((a,b)=>a.gridX-b.gridX);
+      if(!row.length)return null;
+      const rowY=Math.min(wantY,...row.map(o=>o.gridY));
+      // Intent is determined only by cursor/drop x. This makes preview == final placement.
+      const centerX=wantX+moving.gridW/2;
+      let insert=0;
+      while(insert<row.length && centerX>row[insert].gridX+row[insert].gridW/2)insert++;
+      // Keep the dragged block's width where possible; never silently move it elsewhere.
+      let desired=Math.max(2,Math.min(moving.gridW,BUILDER_COLS-2*row.length));
+      const minEach=2;
+      if(desired+row.length*minEach>BUILDER_COLS)desired=Math.max(2,BUILDER_COLS-row.length*minEach);
+      const widths=row.map(o=>o.gridW),need=Math.max(0,widths.reduce((a,b)=>a+b,0)+desired-BUILDER_COLS);
+      let remain=need;
+      // Shrink closest neighbors first: left neighbor, right neighbor, then outward.
+      const order=[];
+      for(let d=1;d<=row.length;d++){const l=insert-d,r=insert+d-1;if(l>=0)order.push(l);if(r<row.length)order.push(r)}
+      for(const idx of order){if(remain<=0)break;const take=Math.min(remain,widths[idx]-minEach);widths[idx]-=take;remain-=take}
+      if(remain>0)return null;
       let x=1;const placements=[];
-      ordered.forEach((o,i)=>{const w=base+(i<extra?1:0);placements.push({id:o.id,x,y:rowY,w,h:o.gridH});x+=w});
-      return{placements,rowY,rowH:Math.max(...ordered.map(o=>o.gridH)),moving:placements.find(p=>p.id===moving.id)};
+      for(let i=0;i<=row.length;i++){
+        if(i===insert){placements.push({id:moving.id,x,y:rowY,w:desired,h:moving.gridH,isMoving:true});x+=desired}
+        if(i<row.length){placements.push({id:row[i].id,x,y:row[i].gridY,w:widths[i],h:row[i].gridH});x+=widths[i]}
+      }
+      return{placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
     }
     function builderShowRowPlan(grid,plan){
-      grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());if(!plan)return;
-      plan.placements.forEach(p=>{const v=document.createElement("i");v.className="builder-row-preview";v.style.gridColumn=p.x+"/span "+p.w;v.style.gridRow=p.y+"/span "+p.h;grid.appendChild(v)});
+      grid.querySelectorAll(".builder-insert-preview").forEach(x=>x.remove());
+      grid.querySelectorAll(".builder-preview-neighbor").forEach(x=>x.classList.remove("builder-preview-neighbor"));
+      if(!plan?.moving)return;
+      const p=plan.moving,v=document.createElement("i");v.className="builder-insert-preview";
+      v.style.gridColumn=p.x+"/span "+p.w;v.style.gridRow=p.y+"/span "+p.h;grid.appendChild(v);
+      // Preview only the affected neighbor widths. Their stored data is untouched until drop.
+      plan.placements.filter(p=>!p.isMoving).forEach(p=>{
+        const el=grid.querySelector('.page-block[data-id="'+p.id+'"]');if(!el)return;
+        el.classList.add("builder-preview-neighbor");el.style.setProperty("--grid-x",p.x);el.style.setProperty("--grid-w",p.w);
+      });
+    }
+    function builderClearRowPlan(grid,page){
+      grid.querySelectorAll(".builder-insert-preview").forEach(x=>x.remove());
+      grid.querySelectorAll(".builder-preview-neighbor").forEach(el=>{
+        el.classList.remove("builder-preview-neighbor");
+        const b=page.blocks.find(o=>o.id===el.dataset.id);if(b){el.style.setProperty("--grid-x",b.gridX);el.style.setProperty("--grid-w",b.gridW)}
+      });
     }
     function builderApplyRowPlan(page,plan){
       if(!plan)return false;
@@ -3108,14 +3133,14 @@
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
             const wantX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),wantY=Math.max(1,start.y+dy);
             block.gridX=wantX;block.gridY=wantY;builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();
-            rowPlan=builderAutoRowPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
+            builderClearRowPlan(grid,page);rowPlan=builderAutoRowPlan(page,block,wantX,wantY);builderShowRowPlan(grid,rowPlan);
             const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit&&!rowPlan);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
           const up=ev=>{
             try{el.releasePointerCapture(pointerId)}catch(err){}
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan)builderApplyRowPlan(page,rowPlan);else{const free=builderNearestFreeForBlock(page,block,block.gridX,block.gridY);block.gridX=free.x;block.gridY=free.y}builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan)builderApplyRowPlan(page,rowPlan);else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearGuides(grid);grid.querySelector(".builder-dock-preview")?.remove();builderClearRowPlan(grid,page);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
@@ -3238,7 +3263,7 @@
             }
             ghost.style.left=ev.clientX+"px";ghost.style.top=ev.clientY+"px";
             const grid=document.querySelector("#builder-canvas .builder-grid");if(!grid)return;
-            const r=grid.getBoundingClientRect();grid.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());
+            const r=grid.getBoundingClientRect();builderClearRowPlan(grid,builderPage());
             if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom){rowPlan=null;return}
             const p=builderPage();builderGridMigrate(p),col=(r.width-23*6)/24;
             incoming.gridX=Math.max(1,Math.min(BUILDER_COLS-incoming.gridW+1,Math.round((ev.clientX-r.left)/(col+6))+1-Math.floor(incoming.gridW/2)));
@@ -3247,12 +3272,13 @@
           };
           const up=ev=>{
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);document.body.classList.remove("builder-pointer-drag");ghost?.remove();
-            const grid=document.querySelector("#builder-canvas .builder-grid");grid?.querySelectorAll(".builder-row-preview").forEach(x=>x.remove());
+            const grid=document.querySelector("#builder-canvas .builder-grid");if(grid)builderClearRowPlan(grid,builderPage());
             if(!active||!grid||!incoming)return;
             const r=grid.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)return;
             const p=builderPage();builderGridMigrate(p);
+            if(!rowPlan&&p.blocks.some(o=>builderGridCollides(incoming,o)))return;
             p.blocks.push(incoming);
-            if(rowPlan)builderApplyRowPlan(p,rowPlan);else{const free=builderNearestFreeForBlock(p,incoming,incoming.gridX,incoming.gridY);incoming.gridX=free.x;incoming.gridY=free.y}
+            if(rowPlan)builderApplyRowPlan(p,rowPlan);
             builderSelected=incoming.id;builderSelectedFolder=null;builderRender();builderHistoryCommit();
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
