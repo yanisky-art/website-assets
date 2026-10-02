@@ -1,0 +1,67 @@
+{
+  "currentPage": "home",
+  "pages": [
+    {
+      "id": "home",
+      "name": "HOME",
+      "blocks": [
+        {
+          "id": "pub-menu",
+          "type": "site-menu",
+          "span": 24,
+          "gridVersion": 24,
+          "visible": true,
+          "opacity": 100,
+          "deviceVisibility": {
+            "desktop": true,
+            "tablet": true,
+            "mobile": true
+          }
+        }
+      ],
+      "folders": []
+    },
+    {
+      "id": "about",
+      "name": "ABOUT",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "traditional",
+      "name": "TRADITIONAL",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "digital",
+      "name": "DIGITAL",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "mixed-media",
+      "name": "MIXED MEDIA",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "projects",
+      "name": "PROJECTS",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "events",
+      "name": "EVENTS",
+      "blocks": [],
+      "folders": []
+    },
+    {
+      "id": "contact",
+      "name": "CONTACT",
+      "blocks": [],
+      "folders": []
+    }
+  ]
+}
