@@ -15,10 +15,12 @@
 </style>
 </head>
 <body>
-<main id="grid">
-<section class="block" style="--span:24"><iframe src="./menu/" scrolling="no" title="YANISKY navigation" style="height:72px"></iframe></section>
-</main>
+<main id="grid"></main>
 <script>
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const markup=b=>{if(b.type==="text")return '<h3 class="title">'+esc(b.title||"Заголовок")+'</h3><p class="text">'+esc(b.text||"")+'</p>';if(b.type==="image")return '<div class="img">'+esc(b.title||"Изображение")+'</div>';if(b.type==="button")return '<h3 class="title">'+esc(b.title||"Кнопка")+'</h3><span class="btn">'+esc(b.text||"Открыть")+'</span>';if(b.type==="site-menu")return '<iframe src="./menu/" scrolling="no"></iframe>';if(b.type==="price-calculator")return '<iframe src="./price-calculator/" scrolling="no"></iframe>';if(b.type==="divider")return '<div class="divider"></div>';if(b.type==="spacer")return '';const u=b.url||b.widget?.url||"";return u?'<iframe src="'+esc(u)+'" scrolling="no"></iframe>':''};
+async function render(){const grid=document.getElementById("grid");try{const r=await fetch("./site-data.json?"+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("published data");const state=await r.json();const id=new URLSearchParams(location.search).get("page")||"home";const page=state.pages.find(p=>p.id===id)||state.pages.find(p=>p.id==="home")||state.pages[0];document.title=(page?.name||"YANISKY")+" - YANISKY";const device=innerWidth<=600?"mobile":innerWidth<=900?"tablet":"desktop";(page?.blocks||[]).forEach(b=>{if(b.visible===false||b.deviceVisibility?.[device]===false)return;const e=document.createElement("section");e.className="block";let span=Number(b.span)||24;if((b.gridVersion||12)===12)span=Math.min(24,span*2);e.style.setProperty("--span",Math.max(1,Math.min(24,span)));if(Number(b.height)>0)e.style.setProperty("--h",Number(b.height)+"px");e.style.opacity=Math.max(0,Math.min(100,Number(b.opacity??100)))/100;e.innerHTML=markup(b);grid.appendChild(e)})}catch(e){grid.innerHTML='<section class="block"><p class="text">Site is temporarily unavailable.</p></section>'}}
+render();
 window.addEventListener("message",e=>{const d=e.data;if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;document.querySelectorAll(".block iframe").forEach(frame=>{if(frame.contentWindow===e.source){const h=Math.max(72,Math.ceil(Number(d.height)));if(!frame.closest(".block").style.getPropertyValue("--h"))frame.style.height=h+"px"}})});
 </script>
 </body>
