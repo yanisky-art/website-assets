@@ -2734,9 +2734,7 @@
         const res=await fetch(api,{method:"PUT",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({message:"Publish site from Page Builder",content,sha:info.sha,branch:"main"})});
         if(!res.ok)throw new Error("Ошибка публикации GitHub ("+res.status+")");
         button.textContent="Опубликовано ✓";setTimeout(()=>button.textContent=old,1800);
-      }catch(err){button.textContent="Ошибка";alert(err.message+"
-
-Если токен неверный, обнови страницу и введи корректный токен.");setTimeout(()=>button.textContent=old,1800)}
+      }catch(err){button.textContent="Ошибка";alert(err.message+"\\n\\nЕсли токен неверный, обнови страницу и введи корректный токен.");setTimeout(()=>button.textContent=old,1800)}
       finally{button.disabled=false}
     }
     function builderEsc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
