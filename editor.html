@@ -2698,6 +2698,7 @@
         {id:"digital",name:"DIGITAL",blocks:[]},
         {id:"mixed-media",name:"MIXED MEDIA",blocks:[]},
         {id:"projects",name:"PROJECTS",blocks:[]},
+        {id:"game",name:"GAME",blocks:[]},
         {id:"events",name:"EVENTS",blocks:[]},
         {id:"contact",name:"CONTACT",blocks:[]}
       ]
@@ -2739,6 +2740,7 @@
         const parsed=raw?JSON.parse(raw):null;
         if(parsed && Array.isArray(parsed.pages) && parsed.pages.length){
           builderState=parsed;
+          if(!builderState.pages.some(p=>p.id==="game")) builderState.pages.splice(Math.max(0,builderState.pages.findIndex(p=>p.id==="events")),0,{id:"game",name:"GAME",blocks:[],folders:[]});
           // Keep an untouched recovery copy of the last valid browser draft.
           if(!localStorage.getItem(PAGE_BUILDER_KEY+":recovery")) localStorage.setItem(PAGE_BUILDER_KEY+":recovery",raw);
         }else{
