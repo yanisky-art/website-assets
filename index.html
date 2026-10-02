@@ -668,7 +668,7 @@
     .builder-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #ddd;background:#fff;flex-wrap:wrap}
     .builder-toolbar-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
     .builder-mini{appearance:none;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;padding:7px 10px;font:inherit;font-size:12px;cursor:pointer}
-    .builder-mini.active{background:#222;color:#fff;border-color:#222}
+    .builder-mini.active{background:#222;color:#fff;border-color:#222}.builder-mini:disabled{opacity:.3;cursor:not-allowed}
     .builder-canvas-wrap{padding:18px;overflow:auto;flex:1}
     .builder-canvas{width:100%;max-width:980px;margin:auto;background:#fff;min-height:620px;border:1px solid #ddd;border-radius:10px;overflow:hidden;transition:max-width .2s ease}
     .builder-canvas.tablet{max-width:720px}.builder-canvas.mobile{max-width:390px}
@@ -1210,6 +1210,8 @@
               <span class="builder-note">yanisky.art/</span>
             </div>
             <div class="builder-toolbar-group">
+              <button class="builder-mini" id="builder-undo" type="button" title="Отменить последнее действие (Ctrl/Cmd+Z)" disabled>↶ Отменить</button>
+              <button class="builder-mini" id="builder-redo" type="button" title="Вернуть отменённое действие (Ctrl/Cmd+Shift+Z)" disabled>↷ Вернуть</button>
               <button class="builder-mini active" data-builder-device="desktop" type="button">Desktop</button>
               <button class="builder-mini" data-builder-device="tablet" type="button">Tablet</button>
               <button class="builder-mini" data-builder-device="mobile" type="button">Mobile</button>
@@ -3030,6 +3032,28 @@
     };
     let builderState;
     let builderSelected = null;
+    const BUILDER_HISTORY_LIMIT=15;
+    let builderUndoStack=[],builderRedoStack=[],builderHistoryApplying=false,builderHistoryLast="";
+    function builderSnapshot(){return JSON.stringify(builderState)}
+    function builderHistoryInit(){builderHistoryLast=builderSnapshot();builderUpdateHistoryButtons()}
+    function builderHistoryCommit(){
+      if(builderHistoryApplying||!builderState)return;
+      const now=builderSnapshot();if(now===builderHistoryLast)return;
+      builderUndoStack.push(builderHistoryLast);if(builderUndoStack.length>BUILDER_HISTORY_LIMIT)builderUndoStack.shift();
+      builderRedoStack=[];builderHistoryLast=now;builderUpdateHistoryButtons();
+    }
+    function builderApplyHistory(snapshot){
+      builderHistoryApplying=true;builderState=JSON.parse(snapshot);builderSelected=null;builderHistoryLast=snapshot;builderPersist();builderRender();builderHistoryApplying=false;builderUpdateHistoryButtons();
+    }
+    function builderUndo(){
+      if(!builderUndoStack.length)return;const current=builderSnapshot(),previous=builderUndoStack.pop();builderRedoStack.push(current);if(builderRedoStack.length>BUILDER_HISTORY_LIMIT)builderRedoStack.shift();builderApplyHistory(previous)
+    }
+    function builderRedo(){
+      if(!builderRedoStack.length)return;const current=builderSnapshot(),next=builderRedoStack.pop();builderUndoStack.push(current);if(builderUndoStack.length>BUILDER_HISTORY_LIMIT)builderUndoStack.shift();builderApplyHistory(next)
+    }
+    function builderUpdateHistoryButtons(){
+      const u=document.getElementById("builder-undo"),r=document.getElementById("builder-redo");if(u)u.disabled=!builderUndoStack.length;if(r)r.disabled=!builderRedoStack.length
+    }
 
     function builderLoad(){
       try{builderState=JSON.parse(localStorage.getItem(PAGE_BUILDER_KEY))||structuredClone(builderDefault)}
@@ -3049,8 +3073,8 @@
     function builderSelectedBlock(){return builderPage().blocks.find(b=>b.id===builderSelected)}
     function builderDuplicateBlock(id){const p=builderPage(),i=p.blocks.findIndex(b=>b.id===id);if(i<0)return;const copy=structuredClone(p.blocks[i]);copy.id=builderUid();copy.layerName=(builderLayerName(copy)+" копия");p.blocks.splice(i+1,0,copy);builderSelected=copy.id;builderRender()}
     function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;builderRender()}
-    function builderToggleVisibility(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.visible=b.visible===false?true:false;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
-    function builderToggleLock(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.locked=!b.locked;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
+    function builderToggleVisibility(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.visible=b.visible===false?true:false;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+    function builderToggleLock(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.locked=!b.locked;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderRenderLayers(){
       const host=document.getElementById("builder-layers");if(!host)return;builderNormalizeLayers();const p=builderPage(),folders=p.folders||[];
       const inFolder=new Set(folders.flatMap(g=>g.children||[]));
@@ -3102,7 +3126,7 @@
       }
       return Math.max(2,Math.min(24,Number(block.span||24)));
     }
-    function builderSetSpan(block,span){block.span=Math.max(2,Math.min(24,Number(span)));block.gridVersion=24;builderRenderCanvas();builderRenderInspector()}
+    function builderSetSpan(block,span){block.span=Math.max(2,Math.min(24,Number(span)));block.gridVersion=24;builderRenderCanvas();builderRenderInspector();builderHistoryCommit()}
     function builderHeight(block){return block.height?Math.max(48,Number(block.height)):null}
 
     function builderRenderCanvas(){
@@ -3299,7 +3323,7 @@
       document.title=page.name+" - YANISKY Preview";
     }
 
-    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop()}
+    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit()}
     window.addEventListener("message",e=>{
       const d=e.data;
       if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;
@@ -3314,6 +3338,7 @@
       });
     });
     builderLoad();
+    builderHistoryInit();
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>{
       btn.draggable=true;
@@ -3325,6 +3350,8 @@
       });
       btn.addEventListener("dragend",()=>btn.classList.remove("drag-source"));
     });
+    document.getElementById("builder-undo")?.addEventListener("click",builderUndo);
+    document.getElementById("builder-redo")?.addEventListener("click",builderRedo);
     document.querySelectorAll("[data-builder-device]").forEach(btn=>btn.addEventListener("click",()=>{
       document.querySelectorAll("[data-builder-device]").forEach(x=>x.classList.toggle("active",x===btn));
       const canvas=document.getElementById("builder-canvas");canvas.classList.remove("tablet","mobile");if(btn.dataset.builderDevice!=="desktop")canvas.classList.add(btn.dataset.builderDevice);
@@ -3334,6 +3361,8 @@
     document.addEventListener("keydown",e=>{
       if(!document.body.classList.contains("builder-mode")||PREVIEW_MODE)return;
       const tag=(e.target?.tagName||"").toLowerCase();if(tag==="input"||tag==="textarea"||tag==="select"||e.target?.isContentEditable)return;
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();if(e.shiftKey)builderRedo();else builderUndo();return}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();builderRedo();return}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&builderSelected){e.preventDefault();builderDuplicateBlock(builderSelected)}
       if((e.key==="Delete"||e.key==="Backspace")&&builderSelected){e.preventDefault();builderDeleteBlock(builderSelected)}
     });
