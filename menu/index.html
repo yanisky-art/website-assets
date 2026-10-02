@@ -861,6 +861,13 @@
             topUrl.searchParams.set("page", page);
             topUrl.searchParams.set("preview", Date.now().toString());
             window.top.location.href = topUrl.toString();
+            return;
+          }
+          if (topUrl.pathname.endsWith("/index.html") || topUrl.pathname.endsWith("/website-assets/") || topUrl.pathname.endsWith("/website-assets")) {
+            event.preventDefault();
+            topUrl.pathname = topUrl.pathname.endsWith("/index.html") ? topUrl.pathname : topUrl.pathname.replace(/\/?$/, "/") + "index.html";
+            topUrl.searchParams.set("page", page);
+            window.top.location.href = topUrl.toString();
           }
         } catch (e) {}
       });
