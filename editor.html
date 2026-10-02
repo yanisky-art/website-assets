@@ -2888,7 +2888,7 @@
       });
       document.getElementById("builder-current-page").textContent=builderPage().name;
       const previewLink=document.getElementById("builder-preview");
-      if(previewLink){const u=new URL("./index.html",window.location.href);u.searchParams.set("page",builderPage().id);u.searchParams.set("draft","1");previewLink.href=u.toString()}
+      if(previewLink){const u=new URL("./preview.html",window.location.href);u.searchParams.set("page",builderPage().id);previewLink.href=u.toString()}
     }
 
     function builderBlockMarkup(b){
@@ -3614,9 +3614,8 @@
       // durable saves/publishing and must not prevent a read-only preview.
       try{localStorage.setItem(PAGE_BUILDER_KEY,JSON.stringify(builderState))}
       catch(err){alert("Не удалось подготовить предпросмотр.");return}
-      const u=new URL("./index.html",window.location.href);
+      const u=new URL("./preview.html",window.location.href);
       u.searchParams.set("page",builderPage().id);
-      u.searchParams.set("draft","1");
       u.searchParams.set("preview",Date.now().toString());
       window.open(u.toString(),"_blank","noopener");
     });
