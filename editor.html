@@ -824,7 +824,7 @@
     .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
     .page-block .block-widget-frame{height:100%!important;min-height:0!important}
     .builder-insert-zone{display:none!important}
-    .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.10) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.10) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
+    .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.055) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
     .builder-smart-guide{position:absolute;z-index:60;pointer-events:none;background:#8aa0ff;box-shadow:0 0 0 1px rgba(138,160,255,.15)}
     .builder-smart-guide.v{top:0;bottom:0;width:1px}.builder-smart-guide.h{left:0;right:0;height:1px}
     .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
@@ -3042,25 +3042,32 @@
           builderSelected=incoming.id;builderSelectedFolder=null;
           builderRender();builderHistoryCommit();
         };
-        el.onclick=e=>{if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
+        el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
         el.onpointerdown=e=>{
           if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
-          e.preventDefault();
-          const sx=e.clientX,sy=e.clientY;let active=false;
+          e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(err){}
+          const pointerId=e.pointerId,sx=e.clientX,sy=e.clientY;let active=false;
           const start=builderGridRect(block),gr=grid.getBoundingClientRect(),col=(gr.width-23*6)/24;
           const move=ev=>{
             if(!active&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<5)return;
             if(!active){active=true;builderSelected=block.id;grid.classList.add("grid-interacting");el.classList.add("dragging");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="none")}
             ev.preventDefault();
             const dx=Math.round((ev.clientX-sx)/(col+6)),dy=Math.round((ev.clientY-sy)/BUILDER_ROW_PX);
-            const rawX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx)),rawY=Math.max(1,start.y+dy);
-            const snapped=builderSnapPosition(page,block,rawX,rawY,grid);block.gridX=snapped.x;block.gridY=snapped.y;
+            block.gridX=Math.max(1,Math.min(BUILDER_COLS-start.w+1,start.x+dx));block.gridY=Math.max(1,start.y+dy);
+            builderClearGuides(grid);
+            page.blocks.forEach(o=>{if(o.id===block.id)return;builderGridNormalize(o);
+              const bx=[block.gridX,block.gridX+block.gridW,Math.round(block.gridX+block.gridW/2)],ox=[o.gridX,o.gridX+o.gridW,Math.round(o.gridX+o.gridW/2)];
+              const by=[block.gridY,block.gridY+block.gridH,Math.round(block.gridY+block.gridH/2)],oy=[o.gridY,o.gridY+o.gridH,Math.round(o.gridY+o.gridH/2)];
+              const gx=bx.find(v=>ox.includes(v));if(gx!==undefined)builderGuide(grid,"x",gx);
+              const gy=by.find(v=>oy.includes(v));if(gy!==undefined)builderGuide(grid,"y",gy);
+            });
             const hit=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));el.classList.toggle("builder-collision",hit);
             el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);
           };
           const up=ev=>{
+            try{el.releasePointerCapture(pointerId)}catch(err){}
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();builderClearGuides(grid);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();el.dataset.justDragged="1";builderClearGuides(grid);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
