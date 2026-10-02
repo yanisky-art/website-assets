@@ -979,11 +979,7 @@
       }
     );
 
-    // editor.html is the dedicated Page Builder entry point.
-    // Force the builder tab active so legacy widget tabs never cover it.
-    if (!PREVIEW_MODE && (!EDITOR_QUERY || EDITOR_QUERY === "page-builder")) {
-      openTab("page-builder-tool");
-    }
+
 
 
     /* ===================================== */
@@ -3055,7 +3051,7 @@
       document.title=page.name+" - YANISKY Preview";
     }
 
-    function builderRender(){builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit()}
+    function builderRender(){const tool=document.getElementById("page-builder-tool");if(tool){tool.classList.add("active");tool.style.display="block"}builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit()}
     window.addEventListener("message",e=>{
       const d=e.data;
       if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;
