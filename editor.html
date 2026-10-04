@@ -745,7 +745,6 @@
     body.builder-mode.builder-focus-mode .page-block-tools,
     body.builder-mode.builder-focus-mode .builder-resize-handle,
     body.builder-mode.builder-focus-mode .builder-size-readout,
-    body.builder-mode.builder-focus-mode .builder-insert-zone{display:none!important}
     body.builder-mode.builder-focus-mode .page-block.selected{outline:0!important}
     body.builder-mode.builder-focus-mode .page-block{cursor:default!important}
 
@@ -781,10 +780,6 @@
     .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:auto;cursor:grab}.page-block.dragging:has(.block-widget-frame)::after{cursor:grabbing}
     .page-block.selected .builder-resize-handle,.page-block.selected .page-block-tools,.page-block.selected .builder-size-readout{z-index:30}
     .page-block:has(.block-widget-frame)>.builder-size-readout{right:12px;bottom:10px}
-    .builder-insert-zone{grid-column:1/-1;height:8px;border-radius:999px;position:relative;transition:.12s ease}
-    .builder-insert-zone::after{content:"";position:absolute;left:8px;right:8px;top:5px;height:2px;background:transparent;border-radius:999px}
-    .builder-insert-zone.active{height:28px;background:rgba(111,140,255,.08)}
-    .builder-insert-zone.active::after{background:#6f8cff}
     .builder-resize-handle{position:absolute;z-index:20;display:none;touch-action:none}
     .page-block.selected .builder-resize-handle{display:block}
     .builder-resize-handle[data-dir="n"],.builder-resize-handle[data-dir="s"]{left:30px;right:30px;height:72px;cursor:ns-resize}
@@ -829,7 +824,6 @@
 
     .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
     .page-block .block-widget-frame{height:100%!important;min-height:0!important;user-select:none}.page-block iframe.block-widget-frame{pointer-events:none}.page-block.selected iframe.block-widget-frame{pointer-events:none}
-    .builder-insert-zone{display:none!important}
     .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.055) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
     .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
     .builder-row-preview{position:absolute;z-index:54;pointer-events:none;border:2px solid #8aa0ff;background:rgba(111,140,255,.07);border-radius:8px;box-sizing:border-box}
@@ -3177,25 +3171,12 @@
       const keepScrollTop=scrollWrap?scrollWrap.scrollTop:0,keepScrollLeft=scrollWrap?scrollWrap.scrollLeft:0;
       const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
       canvas.onclick=e=>{
-        if(e.target.closest(".page-block")||e.target.closest(".builder-insert-zone"))return;
+        if(e.target.closest(".page-block"))return;
         if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
       };
       const grid=document.createElement("div");grid.className="builder-grid";const pageRows=builderEnsurePageRows(page);grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";canvas.appendChild(grid);
 
-      function zone(index){
-        const z=document.createElement("div");z.className="builder-insert-zone";z.dataset.index=index;
-        z.ondragover=e=>{e.preventDefault();e.stopPropagation();z.classList.add("active")};
-        z.ondragleave=()=>z.classList.remove("active");
-        z.ondrop=e=>{
-          e.preventDefault();e.stopPropagation();z.classList.remove("active");
-          const raw=e.dataTransfer.getData("application/json");
-          if(raw){try{const data=JSON.parse(raw);if(data.kind==="widget"){builderInsertWidget(data.widget,index);return}if(data.kind==="block"){builderInsertBlock(data.type,index);return}}catch(err){}}
-          const from=e.dataTransfer.getData("text/plain");if(!from)return;
-          const old=page.blocks.findIndex(x=>x.id===from);if(old<0)return;
-          const [m]=page.blocks.splice(old,1);let target=index;if(old<index)target--;page.blocks.splice(Math.max(0,target),0,m);builderRenderCanvas();
-        };
-        return z;
-      }
+      
 
       if(!page.blocks.length){
         const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
@@ -3472,7 +3453,7 @@
       canvas.ondrop=e=>{
         // Insert zones and the empty-state have their own drop handlers.
         // Do not let the canvas create a second copy of the same dragged block.
-        if(e.target.closest(".builder-insert-zone")||e.target.closest(".builder-empty")||e.target.closest(".page-block"))return;
+        if(e.target.closest(".builder-empty")||e.target.closest(".page-block"))return;
         const raw=e.dataTransfer.getData("application/json");if(!raw)return;
         e.preventDefault();e.stopPropagation();canvas.classList.remove("builder-drop-ready");
         try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget);else if(data.kind==="block")builderInsertBlock(data.type)}catch(err){}
