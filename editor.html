@@ -3366,7 +3366,10 @@
     }
     function builderEnsurePageRows(page,rows){
       const min=Math.max(21,builderPageContentRows(page)+2);
-      page.pageRows=Math.max(min,Number(rows)||min);
+      let remembered=0;
+      try{remembered=Number(localStorage.getItem(PAGE_BUILDER_KEY+":pageRows:"+page.id))||0}catch(e){}
+      const requested=Number(rows)||0,current=Number(page.pageRows)||0;
+      page.pageRows=Math.max(min,current,requested,remembered);
       return page.pageRows;
     }
     function builderAutoGrowPage(page,block){
@@ -3517,6 +3520,7 @@
           const delta=Math.round((lastClientY-startY+resizeScrollY)/BUILDER_ROW_PX);
           const minRows=Math.max(21,builderPageContentRows(page)+2);
           page.pageRows=Math.max(minRows,startRows+delta);
+          try{localStorage.setItem(PAGE_BUILDER_KEY+":pageRows:"+page.id,String(page.pageRows))}catch(e){}
           grid.style.minHeight=(page.pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(page.pageRows*BUILDER_ROW_PX+24)+"px";
         };
         const autoScroll=()=>{
