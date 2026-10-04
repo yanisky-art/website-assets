@@ -3520,7 +3520,7 @@
             if(rowPlan&&!builderApplyRowPlan(p,rowPlan)){p.blocks=p.blocks.filter(o=>o.id!==incoming.id);return}
             const finalOverlap=p.blocks.some(o=>o.id!==incoming.id&&builderGridCollides(incoming,o));
             if(finalOverlap){p.blocks=p.blocks.filter(o=>o.id!==incoming.id);return}
-            builderSelected=incoming.id;builderSelectedFolder=null;builderRender();builderHistoryCommit();
+            builderSelected=incoming.id;builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit();
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);
         };
