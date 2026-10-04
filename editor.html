@@ -2735,7 +2735,7 @@
     }
     function builderApplyHistory(snapshot){
       builderHistoryApplying=true;const oldPage=builderState.currentPage;builderState=JSON.parse(snapshot);builderSelected=null;builderSelectedFolder=null;builderHistoryLast=snapshot;builderPersist();
-      if(oldPage===builderState.currentPage&&builderReconcileCanvas()){builderRenderPages();builderSavedWidgets()}else builderRender();
+      if(oldPage===builderState.currentPage){if(!builderReconcileCanvas())builderRenderCanvas()}else builderRender();
       builderHistoryApplying=false;builderUpdateHistoryButtons();
     }
     function builderUndo(){
@@ -2848,7 +2848,7 @@
     }
     function builderSelectedBlock(){return builderPage().blocks.find(b=>b.id===builderSelected)}
     function builderDuplicateBlock(id){const p=builderPage(),i=p.blocks.findIndex(b=>b.id===id);if(i<0)return;const copy=structuredClone(p.blocks[i]);copy.id=builderUid();copy.layerName=(builderLayerName(copy)+" копия");p.blocks.splice(i+1,0,copy);builderSelected=copy.id;builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit()}
-    function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit()}
+    function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit()}
     function builderToggleVisibility(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.visible=b.visible===false?true:false;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderToggleLock(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.locked=!b.locked;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderCopySelection(cut=false){
@@ -2857,7 +2857,7 @@
         const g=(p.folders||[]).find(x=>x.id===builderSelectedFolder);if(!g)return;
         const blocks=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean).map(b=>structuredClone(b));
         builderSaveClipboard({kind:"folder",folder:structuredClone(g),blocks,cut,sourcePage:p.id});
-        if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit()}
+        if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit()}
         return;
       }
       const b=builderSelectedBlock();if(!b)return;
@@ -2874,7 +2874,7 @@
         p.blocks.push(...copies);p.folders.push(g);builderSelected=null;builderSelectedFolder=g.id;
       }
       if(clip.cut)builderClearClipboard();
-      if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit();
+      if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit();
     }
     function builderRenderLayers(){
       const host=document.getElementById("builder-layers");if(!host)return;builderNormalizeLayers();const p=builderPage(),folders=p.folders||[];
@@ -3316,6 +3316,14 @@
       builderRenderInspector();
     }
 
+    function builderCreateEmptyState(grid){
+      const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";
+      empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
+      empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
+      empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0);if(data.kind==="block")builderInsertBlock(data.type,0)}catch(err){}}};
+      return empty;
+    }
+
     function builderReconcileCanvas(){
       const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
       const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
@@ -3325,8 +3333,8 @@
       // Remove only blocks that no longer exist. Other live nodes, especially iframes, stay attached.
       grid.querySelectorAll(".page-block").forEach(node=>{if(!wanted.has(node.dataset.id))node.remove()});
 
-      // Empty/non-empty transitions are rare structural boundaries and remain safe full-render fallbacks.
-      if(!page.blocks.length){if(grid.querySelector(".page-block"))return false;builderRenderCanvas();return true}
+      // Empty/non-empty transitions are reconciled in place too, so deleting the last block does not flash.
+      if(!page.blocks.length){if(!grid.querySelector(".builder-empty"))grid.appendChild(builderCreateEmptyState(grid));builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();return true}
       const empty=grid.querySelector(".builder-empty");if(empty)empty.remove();
 
       for(const block of page.blocks){
@@ -3364,8 +3372,7 @@
     function builderAppendBlockWithoutCanvasRebuild(block){
       const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
       const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
-      // First block has no existing live content to preserve, so the canonical full render is safe.
-      if(grid.querySelector(".builder-empty")||!grid.querySelector(".page-block"))return false;
+      grid.querySelector(".builder-empty")?.remove();
       builderGridNormalize(block);
       grid.appendChild(builderCreateBlockElement(block,grid,canvas,page));
       const pageRows=builderEnsurePageRows(page,block.gridY+block.gridH+3);
@@ -3388,12 +3395,7 @@
 
       
 
-      if(!page.blocks.length){
-        const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
-        empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
-        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0);if(data.kind==="block")builderInsertBlock(data.type,0)}catch(err){}}};
-        grid.appendChild(empty);return;
-      }
+      if(!page.blocks.length){grid.appendChild(builderCreateEmptyState(grid));return;}
 
       page.blocks.forEach(block=>grid.appendChild(builderCreateBlockElement(block,grid,canvas,page)));
       const pageResizer=document.createElement("div");pageResizer.className="builder-page-resizer";pageResizer.title="Потяни вверх или вниз, чтобы изменить длину страницы";
@@ -3539,14 +3541,14 @@
     function builderInsertBlock(type,atIndex=null){
       const b=builderMakeBlock(type),blocks=builderPage().blocks;
       builderGridMigrate(builderPage());builderGridNormalize(b);const pos=builderGridFindFree(builderPage(),b.gridW,b.gridH);b.gridX=pos.x;b.gridY=pos.y;if(atIndex===null)blocks.push(b);else blocks.splice(Math.max(0,atIndex),0,b);
-      builderSelected=b.id;if(!builderAppendBlockWithoutCanvasRebuild(b))builderRenderCanvas();builderRenderPages();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit();return b;
+      builderSelected=b.id;if(!builderAppendBlockWithoutCanvasRebuild(b))builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();builderHistoryCommit();return b;
     }
 
     function builderInsertWidget(w,atIndex=null){
       const block=builderMakeWidgetBlock(w);
       const blocks=builderPage().blocks;
       builderGridMigrate(builderPage());builderGridNormalize(block);const pos=builderGridFindFree(builderPage(),block.gridW,block.gridH);block.gridX=pos.x;block.gridY=pos.y;if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
-      builderSelected=block.id;if(!builderAppendBlockWithoutCanvasRebuild(block))builderRenderCanvas();builderRenderPages();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit();
+      builderSelected=block.id;if(!builderAppendBlockWithoutCanvasRebuild(block))builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();builderHistoryCommit();
     }
 
     document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
