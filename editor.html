@@ -3165,58 +3165,8 @@
       if(needed>builderEnsurePageRows(page))page.pageRows=needed;
     }
 
-    function builderUpdateSelectionUI(){
-      const canvas=document.getElementById("builder-canvas");
-      if(canvas){
-        canvas.querySelectorAll(".page-block.selected").forEach(el=>el.classList.remove("selected"));
-        if(builderSelected){
-          const selectedEl=canvas.querySelector('.page-block[data-id="'+builderSelected+'"]');
-          if(selectedEl)selectedEl.classList.add("selected");
-        }
-      }
-      builderRenderLayers();
-      builderRenderInspector();
-    }
+    function builderCreateBlockElement(block,grid,canvas,page){
 
-    function builderAppendBlockWithoutCanvasRebuild(block){
-      const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
-      const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
-      // Reuse the canonical renderer to create only the new block, then move that node
-      // into the current grid. Existing blocks and iframe DOM stay untouched.
-      const existing=new Map([...grid.querySelectorAll(".page-block")].map(el=>[el.dataset.id,el]));
-      builderRenderCanvas();
-      const freshGrid=canvas.querySelector(".builder-grid"),fresh=freshGrid?.querySelector('.page-block[data-id="'+block.id+'"]');
-      if(!fresh)return false;
-      const newGrid=freshGrid;
-      page.blocks.forEach(b=>{
-        if(b.id===block.id)return;
-        const old=existing.get(b.id);if(old)newGrid.replaceChild(old,newGrid.querySelector('.page-block[data-id="'+b.id+'"]'));
-      });
-      builderUpdateSelectionUI();
-      return true;
-    }
-
-    function builderRenderCanvas(){
-      const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
-      const scrollWrap=canvas.closest(".builder-canvas-wrap");
-      const keepScrollTop=scrollWrap?scrollWrap.scrollTop:0,keepScrollLeft=scrollWrap?scrollWrap.scrollLeft:0;
-      const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
-      canvas.onclick=e=>{
-        if(e.target.closest(".page-block"))return;
-        if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderUpdateSelectionUI()}
-      };
-      const grid=document.createElement("div");grid.className="builder-grid";const pageRows=builderEnsurePageRows(page);grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";canvas.appendChild(grid);
-
-      
-
-      if(!page.blocks.length){
-        const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
-        empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
-        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0);if(data.kind==="block")builderInsertBlock(data.type,0)}catch(err){}}};
-        grid.appendChild(empty);return;
-      }
-
-      page.blocks.forEach((block,i)=>{
         builderGridNormalize(block); const span=block.gridW,height=builderHeight(block);
       builderNormalizeLayers();
         const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
@@ -3341,8 +3291,58 @@
             handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
         });
-        grid.appendChild(el);
-      });
+
+        return el;
+    }
+
+    function builderUpdateSelectionUI(){
+      const canvas=document.getElementById("builder-canvas");
+      if(canvas){
+        canvas.querySelectorAll(".page-block.selected").forEach(el=>el.classList.remove("selected"));
+        if(builderSelected){
+          const selectedEl=canvas.querySelector('.page-block[data-id="'+builderSelected+'"]');
+          if(selectedEl)selectedEl.classList.add("selected");
+        }
+      }
+      builderRenderLayers();
+      builderRenderInspector();
+    }
+
+    function builderAppendBlockWithoutCanvasRebuild(block){
+      const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
+      const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
+      // First block has no existing live content to preserve, so the canonical full render is safe.
+      if(grid.querySelector(".builder-empty")||!grid.querySelector(".page-block"))return false;
+      builderGridNormalize(block);
+      grid.appendChild(builderCreateBlockElement(block,grid,canvas,page));
+      const pageRows=builderEnsurePageRows(page,block.gridY+block.gridH+3);
+      grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";
+      canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";
+      builderUpdateSelectionUI();
+      return true;
+    }
+
+    function builderRenderCanvas(){
+      const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
+      const scrollWrap=canvas.closest(".builder-canvas-wrap");
+      const keepScrollTop=scrollWrap?scrollWrap.scrollTop:0,keepScrollLeft=scrollWrap?scrollWrap.scrollLeft:0;
+      const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
+      canvas.onclick=e=>{
+        if(e.target.closest(".page-block"))return;
+        if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderUpdateSelectionUI()}
+      };
+      const grid=document.createElement("div");grid.className="builder-grid";const pageRows=builderEnsurePageRows(page);grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";canvas.appendChild(grid);
+
+      
+
+      if(!page.blocks.length){
+        const empty=document.createElement("div");empty.className="builder-empty";empty.style.gridColumn="1/-1";empty.innerHTML="Страница пока пустая.<br>Добавь первый блок слева или перетащи сюда виджет.";
+        empty.ondragover=e=>{e.preventDefault();empty.classList.add("builder-drop-ready")};
+        empty.ondrop=e=>{const raw=e.dataTransfer.getData("application/json");if(raw){e.preventDefault();try{const data=JSON.parse(raw);if(data.kind==="widget")builderInsertWidget(data.widget,0);if(data.kind==="block")builderInsertBlock(data.type,0)}catch(err){}}};
+        grid.appendChild(empty);return;
+      }
+
+      page.blocks.forEach(block=>grid.appendChild(builderCreateBlockElement(block,grid,canvas,page)));
       const pageResizer=document.createElement("div");pageResizer.className="builder-page-resizer";pageResizer.title="Потяни вверх или вниз, чтобы изменить длину страницы";
       pageResizer.onpointerdown=e=>{
         e.preventDefault();e.stopPropagation();pageResizer.classList.add("resizing");pageResizer.setPointerCapture(e.pointerId);
