@@ -676,7 +676,7 @@
     .builder-empty{padding:80px 24px;text-align:center;opacity:.45;font-size:14px}
     .page-block{position:relative;padding:28px;border-bottom:1px solid #eee;cursor:pointer;transition:outline .1s ease}
     .page-block.selected{outline:2px solid #6f8cff;outline-offset:-2px}.page-block.dragging{opacity:.35}
-    .page-block-tools{position:absolute;right:8px;top:8px;display:flex;gap:4px;opacity:0;transition:opacity .12s}.page-block:hover .page-block-tools,.page-block.selected .page-block-tools{opacity:1}
+    .page-block-tools{position:absolute;right:8px;top:8px;display:flex;gap:4px;opacity:0;transition:opacity .12s}.page-block:hover .page-block-tools,.page-block.selected .page-block-tools{opacity:1}.builder-move-handle{position:absolute;left:-32px;top:8px;width:28px;height:32px;display:grid;place-items:center;border:0;border-radius:6px;background:#242424;color:#ddd;font-size:18px;cursor:grab;opacity:0;pointer-events:none;z-index:46}.page-block:hover>.builder-move-handle,.page-block.dragging>.builder-move-handle{opacity:1;pointer-events:auto}.builder-move-handle:hover{background:#353535;color:#fff}.builder-move-handle:active{cursor:grabbing}
     .block-tool{border:1px solid #ccc;background:#fff;color:#222;border-radius:7px;width:30px;height:30px;padding:0;display:grid;place-items:center;cursor:pointer;font-size:17px;line-height:1;font-weight:700}.page-block-tools{z-index:45!important;pointer-events:auto}.page-block-tools .builder-danger{pointer-events:auto}
     .block-title{font-family:Georgia,serif;font-size:30px;margin:0 0 10px}.block-text{margin:0;line-height:1.6;opacity:.75}
     .block-image-placeholder{min-height:220px;border-radius:8px;background:linear-gradient(135deg,#ece7e1,#d9d1c8);display:grid;place-items:center;color:#6d6259}
@@ -3180,11 +3180,11 @@
         const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.dataset.renderKey=builderBlockRenderKey(block);el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
-        el.innerHTML='<div class="page-block-tools"><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
+        el.innerHTML='<button class="builder-move-handle" type="button" title="Переместить блок">⠿</button><div class="page-block-tools"><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
         const deleteButton=el.querySelector("[data-delete]");if(deleteButton)deleteButton.onclick=e=>{e.preventDefault();e.stopPropagation();builderDeleteBlock(block.id)};
-        el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderUpdateSelectionUI()};
+        el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools,.builder-resize-handle,.builder-move-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderUpdateSelectionUI()};
         el.onpointerdown=e=>{
-          if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
+          if(block.locked||e.button!==0||!e.target.closest(".builder-move-handle"))return;
           e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(err){}
           const pointerId=e.pointerId,sx=e.clientX,sy=e.clientY;let active=false,rowPlan=null,dragScrollY=0;
           const start=builderGridRect(block),gr=grid.getBoundingClientRect(),col=(gr.width-23*6)/24;
