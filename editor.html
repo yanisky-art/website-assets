@@ -3287,7 +3287,6 @@
         });
         grid.appendChild(el);
       });
-      grid.appendChild(zone(page.blocks.length));
       const pageResizer=document.createElement("div");pageResizer.className="builder-page-resizer";pageResizer.title="Потяни вверх или вниз, чтобы изменить длину страницы";
       pageResizer.onpointerdown=e=>{
         e.preventDefault();e.stopPropagation();pageResizer.classList.add("resizing");pageResizer.setPointerCapture(e.pointerId);
