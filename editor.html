@@ -3550,9 +3550,11 @@
 
     document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
       const target=btn.dataset.widgetEditor;
-      const path=target==="button-tool"?"./tools/button-editor/":target==="notebook-tool"?"./tools/notebook-editor/":null;
+      const path=target==="button-tool"?"./tools/button-editor/index.html":target==="notebook-tool"?"./tools/notebook-editor/index.html":null;
       if(!path)return;
-      window.open(new URL(path,window.location.href).toString(),"_blank","noopener");
+      const u=new URL(path,window.location.href);
+      u.searchParams.set("v","20261005-1");
+      window.open(u.toString(),"_blank","noopener");
     }));
 
     function builderEnableCanvasDrop(){
