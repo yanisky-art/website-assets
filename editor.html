@@ -3226,7 +3226,18 @@
           const up=ev=>{
             try{el.releasePointerCapture(pointerId)}catch(err){}
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
-            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan){if(!builderApplyRowPlan(page,rowPlan)){block.gridX=start.x;block.gridY=start.y}}else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearRowPlan(grid,page);grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
+            if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan){if(!builderApplyRowPlan(page,rowPlan)){block.gridX=start.x;block.gridY=start.y}}else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearRowPlan(grid,page);
+              grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");
+              grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");
+              // Keep the existing DOM after drop. Rebuilding the canvas here reloads iframes and causes a visible flash.
+              page.blocks.forEach(b=>{
+                const node=grid.querySelector('.page-block[data-id="'+b.id+'"]');if(!node)return;
+                builderGridNormalize(b);
+                node.style.setProperty("--grid-x",b.gridX);node.style.setProperty("--grid-y",b.gridY);
+                node.style.setProperty("--grid-w",b.gridW);node.style.setProperty("--grid-h",b.gridH);
+                node.classList.toggle("selected",b.id===builderSelected);
+              });
+              builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
           };
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
