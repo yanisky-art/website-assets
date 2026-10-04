@@ -3627,7 +3627,12 @@
     builderHistoryInit();
     // Render the recovered project immediately, before any optional toolbar/event wiring.
     // This keeps pages, blocks and saved widgets visible even if a secondary control fails later.
-    if(!PREVIEW_MODE) builderRender();
+    if(!PREVIEW_MODE && (!EDITOR_QUERY || EDITOR_QUERY === "page-builder")) {
+      builderRender();
+    } else if(!PREVIEW_MODE && (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool")) {
+      document.body.classList.remove("builder-mode");
+      openTab(EDITOR_QUERY);
+    }
 
     document.querySelectorAll("[data-builder-add]").forEach(btn=>{
       btn.draggable=true;
