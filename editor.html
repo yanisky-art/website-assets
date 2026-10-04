@@ -1017,6 +1017,10 @@
       }
     );
 
+    if (EDITOR_QUERY === "button-tool" || EDITOR_QUERY === "notebook-tool") {
+      openTab(EDITOR_QUERY);
+    }
+
 
 
 
@@ -3553,7 +3557,9 @@
     }
 
     document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
-      const u=new URL(window.location.href);u.searchParams.set("editor",btn.dataset.widgetEditor);
+      const target=btn.dataset.widgetEditor;
+      const u=new URL("./editor.html",window.location.href);
+      u.searchParams.set("editor",target);
       window.open(u.toString(),"_blank","noopener");
     }));
 
