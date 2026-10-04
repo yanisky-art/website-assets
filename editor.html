@@ -3178,6 +3178,24 @@
       builderRenderInspector();
     }
 
+    function builderAppendBlockWithoutCanvasRebuild(block){
+      const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
+      const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
+      // Reuse the canonical renderer to create only the new block, then move that node
+      // into the current grid. Existing blocks and iframe DOM stay untouched.
+      const existing=new Map([...grid.querySelectorAll(".page-block")].map(el=>[el.dataset.id,el]));
+      builderRenderCanvas();
+      const freshGrid=canvas.querySelector(".builder-grid"),fresh=freshGrid?.querySelector('.page-block[data-id="'+block.id+'"]');
+      if(!fresh)return false;
+      const newGrid=freshGrid;
+      page.blocks.forEach(b=>{
+        if(b.id===block.id)return;
+        const old=existing.get(b.id);if(old)newGrid.replaceChild(old,newGrid.querySelector('.page-block[data-id="'+b.id+'"]'));
+      });
+      builderUpdateSelectionUI();
+      return true;
+    }
+
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
       const scrollWrap=canvas.closest(".builder-canvas-wrap");
@@ -3468,14 +3486,14 @@
     function builderInsertBlock(type,atIndex=null){
       const b=builderMakeBlock(type),blocks=builderPage().blocks;
       builderGridMigrate(builderPage());builderGridNormalize(b);const pos=builderGridFindFree(builderPage(),b.gridW,b.gridH);b.gridX=pos.x;b.gridY=pos.y;if(atIndex===null)blocks.push(b);else blocks.splice(Math.max(0,atIndex),0,b);
-      builderSelected=b.id;builderRender();return b;
+      builderSelected=b.id;if(!builderAppendBlockWithoutCanvasRebuild(b))builderRenderCanvas();builderRenderPages();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit();return b;
     }
 
     function builderInsertWidget(w,atIndex=null){
       const block=builderMakeWidgetBlock(w);
       const blocks=builderPage().blocks;
       builderGridMigrate(builderPage());builderGridNormalize(block);const pos=builderGridFindFree(builderPage(),block.gridW,block.gridH);block.gridX=pos.x;block.gridY=pos.y;if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
-      builderSelected=block.id;builderRender();
+      builderSelected=block.id;if(!builderAppendBlockWithoutCanvasRebuild(block))builderRenderCanvas();builderRenderPages();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit();
     }
 
     document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
