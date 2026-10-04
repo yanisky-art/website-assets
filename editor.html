@@ -2881,7 +2881,7 @@
       let html="";
       folders.forEach(g=>{const kids=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean);html+='<div class="builder-layer builder-layer-folder'+(builderSelectedFolder===g.id?" selected":"")+'" data-folder-id="'+g.id+'"><button class="builder-layer-action" data-folder-toggle="'+g.id+'">'+(g.collapsed?"▸":"▾")+'</button><span class="builder-layer-icon">📁</span><span class="builder-layer-name" data-folder-name="'+g.id+'">'+builderEsc(g.name||"Папка")+'</span><button class="builder-layer-action" data-folder-delete="'+g.id+'" title="Убрать папку">×</button></div>';if(!g.collapsed)html+='<div class="builder-layer-folder-children" data-folder-drop="'+g.id+'>'+kids.map(row).join("")+'</div>'});
       html+=p.blocks.filter(b=>!inFolder.has(b.id)).map(row).join("");host.innerHTML=html||'<p class="builder-note">На странице пока нет слоёв.</p>';
-      host.querySelectorAll("[data-layer-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button"))return;builderSelected=el.dataset.layerId;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();document.querySelector('.page-block[data-id="'+builderSelected+'"]')?.scrollIntoView({block:"nearest",behavior:"smooth"})};el.ondragstart=e=>{e.dataTransfer.setData("application/x-yanisky-layer",el.dataset.layerId)};});
+      host.querySelectorAll("[data-layer-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button"))return;builderSelected=el.dataset.layerId;builderSelectedFolder=null;builderUpdateSelectionUI();document.querySelector('.page-block[data-id="'+builderSelected+'"]')?.scrollIntoView({block:"nearest",behavior:"smooth"})};el.ondragstart=e=>{e.dataTransfer.setData("application/x-yanisky-layer",el.dataset.layerId)};});
       host.querySelectorAll("[data-folder-id]").forEach(el=>{el.onclick=e=>{if(e.target.closest("button")||e.target.closest("[contenteditable=true]"))return;builderSelectedFolder=el.dataset.folderId;builderSelected=null;builderRenderLayers();builderRenderInspector()}});
       host.querySelectorAll("[data-layer-eye]").forEach(x=>x.onclick=e=>{e.stopPropagation();builderToggleVisibility(x.dataset.layerEye)});
       host.querySelectorAll("[data-layer-lock]").forEach(x=>x.onclick=e=>{e.stopPropagation();builderToggleLock(x.dataset.layerLock)});
@@ -3165,6 +3165,19 @@
       if(needed>builderEnsurePageRows(page))page.pageRows=needed;
     }
 
+    function builderUpdateSelectionUI(){
+      const canvas=document.getElementById("builder-canvas");
+      if(canvas){
+        canvas.querySelectorAll(".page-block.selected").forEach(el=>el.classList.remove("selected"));
+        if(builderSelected){
+          const selectedEl=canvas.querySelector('.page-block[data-id="'+builderSelected+'"]');
+          if(selectedEl)selectedEl.classList.add("selected");
+        }
+      }
+      builderRenderLayers();
+      builderRenderInspector();
+    }
+
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
       const scrollWrap=canvas.closest(".builder-canvas-wrap");
@@ -3172,7 +3185,7 @@
       const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
       canvas.onclick=e=>{
         if(e.target.closest(".page-block"))return;
-        if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()}
+        if(builderSelected||builderSelectedFolder){builderSelected=null;builderSelectedFolder=null;builderUpdateSelectionUI()}
       };
       const grid=document.createElement("div");grid.className="builder-grid";const pageRows=builderEnsurePageRows(page);grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";canvas.appendChild(grid);
 
@@ -3192,7 +3205,7 @@
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
-        el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector()};
+        el.onclick=e=>{if(el.dataset.justDragged==="1"){delete el.dataset.justDragged;return}if(e.target.closest(".page-block-tools")||e.target.closest(".builder-resize-handle"))return;builderSelected=block.id;builderSelectedFolder=null;builderUpdateSelectionUI()};
         el.onpointerdown=e=>{
           if(block.locked||e.button!==0||e.target.closest(".builder-resize-handle,.page-block-tools"))return;
           e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(err){}
@@ -3218,7 +3231,7 @@
           window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",up,true);window.addEventListener("pointercancel",up,true);
         };
         el.oncontextmenu=e=>{
-          e.preventDefault();builderSelected=block.id;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();
+          e.preventDefault();builderSelected=block.id;builderSelectedFolder=null;builderUpdateSelectionUI();
           document.querySelector(".builder-context-menu")?.remove();
           const m=document.createElement("div");m.className="builder-context-menu";m.style.cssText="position:fixed;z-index:99999;left:"+e.clientX+"px;top:"+e.clientY+"px;background:#171717;color:#fff;border:1px solid #444;border-radius:8px;padding:6px;min-width:160px;box-shadow:0 12px 30px rgba(0,0,0,.35)";
           [["Копировать",()=>builderCopySelection(false)],["Вырезать",()=>builderCopySelection(true)],["Вставить",()=>builderPaste()],["Дублировать",()=>builderDuplicateBlock(block.id)],["Удалить",()=>builderDeleteBlock(block.id)]].forEach(([label,fn])=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="display:block;width:100%;padding:8px 10px;border:0;background:transparent;color:#fff;text-align:left;cursor:pointer";b.onmouseenter=()=>b.style.background="#303030";b.onmouseleave=()=>b.style.background="transparent";b.onclick=()=>{m.remove();fn()};m.appendChild(b)});
@@ -3565,7 +3578,7 @@
     document.getElementById("page-builder-tool")?.addEventListener("pointerdown",e=>{
       if(!builderSelected&&!builderSelectedFolder)return;
       if(e.target.closest(".page-block,.builder-layers,.builder-inspector,.builder-toolbar,.builder-panel,.builder-resize-handle"))return;
-      builderSelected=null;builderSelectedFolder=null;builderRenderCanvas();builderRenderLayers();builderRenderInspector();
+      builderSelected=null;builderSelectedFolder=null;builderUpdateSelectionUI();
     });
     document?.addEventListener("keydown",e=>{
       if(!document.body.classList.contains("builder-mode")||PREVIEW_MODE)return;
