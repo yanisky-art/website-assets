@@ -3303,8 +3303,22 @@
                 builderRestoreGeometry(page,geometryBefore);
               }
               grid.querySelectorAll(".builder-resize-neighbor").forEach(x=>x.classList.remove("builder-resize-neighbor"));
-              // Final safety gate: resize is accepted only when the complete page is collision-free.
-              builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit();
+              // Keep the existing DOM after resize so iframe widgets do not reload or flash.
+              // The collision rollback and neighbor plan may change more than one block,
+              // therefore synchronize every live block from the accepted page geometry.
+              page.blocks.forEach(b=>{
+                const node=grid.querySelector('.page-block[data-id="'+b.id+'"]');if(!node)return;
+                builderGridNormalize(b);
+                node.style.setProperty("--grid-x",b.gridX);node.style.setProperty("--grid-y",b.gridY);
+                node.style.setProperty("--grid-w",b.gridW);node.style.setProperty("--grid-h",b.gridH);
+                node.style.setProperty("--builder-span",b.gridW);
+                node.style.setProperty("--builder-offset-x","0px");node.style.setProperty("--builder-offset-y","0px");
+                if(b.height)node.style.setProperty("--builder-height",b.height+"px");
+                else node.style.removeProperty("--builder-height");
+                const readout=node.querySelector(".builder-size-readout");
+                if(readout)readout.textContent=Math.round(b.gridW/24*100)+"% × "+(b.height?b.height+"px":"auto");
+              });
+              builderRenderLayers();builderRenderInspector();builderHistoryCommit();
             };
             handle?.addEventListener("pointermove",move);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
           };
