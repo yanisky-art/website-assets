@@ -2734,7 +2734,9 @@
       builderRedoStack=[];builderHistoryLast=now;builderUpdateHistoryButtons();builderMarkDirty();
     }
     function builderApplyHistory(snapshot){
-      builderHistoryApplying=true;builderState=JSON.parse(snapshot);builderSelected=null;builderHistoryLast=snapshot;builderPersist();builderRender();builderHistoryApplying=false;builderUpdateHistoryButtons();
+      builderHistoryApplying=true;const oldPage=builderState.currentPage;builderState=JSON.parse(snapshot);builderSelected=null;builderSelectedFolder=null;builderHistoryLast=snapshot;builderPersist();
+      if(oldPage===builderState.currentPage&&builderReconcileCanvas()){builderRenderPages();builderSavedWidgets()}else builderRender();
+      builderHistoryApplying=false;builderUpdateHistoryButtons();
     }
     function builderUndo(){
       if(!builderUndoStack.length)return;const current=builderSnapshot(),previous=builderUndoStack.pop();builderRedoStack.push(current);if(builderRedoStack.length>BUILDER_HISTORY_LIMIT)builderRedoStack.shift();builderApplyHistory(previous)
@@ -2845,8 +2847,8 @@
       p.blocks.forEach(b=>{if(b.visible===undefined)b.visible=true;if(b.locked===undefined)b.locked=false;if(b.opacity===undefined)b.opacity=100;if(b.deviceVisibility===undefined)b.deviceVisibility={desktop:true,tablet:true,mobile:true}});
     }
     function builderSelectedBlock(){return builderPage().blocks.find(b=>b.id===builderSelected)}
-    function builderDuplicateBlock(id){const p=builderPage(),i=p.blocks.findIndex(b=>b.id===id);if(i<0)return;const copy=structuredClone(p.blocks[i]);copy.id=builderUid();copy.layerName=(builderLayerName(copy)+" копия");p.blocks.splice(i+1,0,copy);builderSelected=copy.id;builderRender()}
-    function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;builderRender()}
+    function builderDuplicateBlock(id){const p=builderPage(),i=p.blocks.findIndex(b=>b.id===id);if(i<0)return;const copy=structuredClone(p.blocks[i]);copy.id=builderUid();copy.layerName=(builderLayerName(copy)+" копия");p.blocks.splice(i+1,0,copy);builderSelected=copy.id;builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderHistoryCommit()}
+    function builderDeleteBlock(id){const p=builderPage();p.blocks=p.blocks.filter(b=>b.id!==id);(p.folders||[]).forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));if(builderSelected===id)builderSelected=null;if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit()}
     function builderToggleVisibility(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.visible=b.visible===false?true:false;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderToggleLock(id){const b=builderPage().blocks.find(x=>x.id===id);if(!b)return;b.locked=!b.locked;builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderHistoryCommit()}
     function builderCopySelection(cut=false){
@@ -2855,7 +2857,7 @@
         const g=(p.folders||[]).find(x=>x.id===builderSelectedFolder);if(!g)return;
         const blocks=(g.children||[]).map(id=>p.blocks.find(b=>b.id===id)).filter(Boolean).map(b=>structuredClone(b));
         builderSaveClipboard({kind:"folder",folder:structuredClone(g),blocks,cut,sourcePage:p.id});
-        if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;builderRender()}
+        if(cut){const ids=new Set(g.children||[]);p.blocks=p.blocks.filter(b=>!ids.has(b.id));p.folders=p.folders.filter(x=>x.id!==g.id);builderSelectedFolder=null;if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit()}
         return;
       }
       const b=builderSelectedBlock();if(!b)return;
@@ -2872,7 +2874,7 @@
         p.blocks.push(...copies);p.folders.push(g);builderSelected=null;builderSelectedFolder=g.id;
       }
       if(clip.cut)builderClearClipboard();
-      builderRender();
+      if(!builderReconcileCanvas())builderRenderCanvas();builderRenderPages();builderSavedWidgets();builderHistoryCommit();
     }
     function builderRenderLayers(){
       const host=document.getElementById("builder-layers");if(!host)return;builderNormalizeLayers();const p=builderPage(),folders=p.folders||[];
@@ -3165,11 +3167,17 @@
       if(needed>builderEnsurePageRows(page))page.pageRows=needed;
     }
 
+    function builderBlockRenderKey(block){
+      const copy={...block};
+      ["gridX","gridY","gridW","gridH","gridVersion","span","height","opacity","visible","locked","layerName","autoGridH"].forEach(k=>delete copy[k]);
+      try{return JSON.stringify(copy)}catch(e){return String(block.id||"")}
+    }
+
     function builderCreateBlockElement(block,grid,canvas,page){
 
         builderGridNormalize(block); const span=block.gridW,height=builderHeight(block);
       builderNormalizeLayers();
-        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
+        const el=document.createElement("div");el.className="page-block"+(builderSelected===block.id?" selected":"")+(block.visible===false?" builder-hidden":"")+(block.locked?" builder-locked":"");el.draggable=false;el.dataset.id=block.id;el.dataset.renderKey=builderBlockRenderKey(block);el.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
         el.style.setProperty("--builder-span",span);el.style.setProperty("--builder-height",height?height+"px":"auto");el.style.setProperty("--grid-x",block.gridX);el.style.setProperty("--grid-y",block.gridY);el.style.setProperty("--grid-w",block.gridW);el.style.setProperty("--grid-h",block.gridH);
         const handles=["n","ne","e","se","s","sw","w","nw"].map(d=>'<div class="builder-resize-handle" data-dir="'+d+'" title="Изменить размер"></div>').join("");
         el.innerHTML='<div class="page-block-tools"><button class="block-tool builder-danger" data-delete="'+block.id+'" type="button">×</button></div>'+builderBlockMarkup(block)+handles+'<div class="builder-size-readout">'+Math.round(span/24*100)+'% × '+(height?height+"px":"auto")+'</div>';
@@ -3306,6 +3314,51 @@
       }
       builderRenderLayers();
       builderRenderInspector();
+    }
+
+    function builderReconcileCanvas(){
+      const canvas=document.getElementById("builder-canvas"),page=builderPage();if(!canvas)return false;
+      const grid=canvas.querySelector(".builder-grid");if(!grid)return false;
+      builderGridMigrate(page);builderNormalizeLayers();
+
+      const wanted=new Map(page.blocks.map(b=>[b.id,b]));
+      // Remove only blocks that no longer exist. Other live nodes, especially iframes, stay attached.
+      grid.querySelectorAll(".page-block").forEach(node=>{if(!wanted.has(node.dataset.id))node.remove()});
+
+      // Empty/non-empty transitions are rare structural boundaries and remain safe full-render fallbacks.
+      if(!page.blocks.length){if(grid.querySelector(".page-block"))return false;builderRenderCanvas();return true}
+      const empty=grid.querySelector(".builder-empty");if(empty)empty.remove();
+
+      for(const block of page.blocks){
+        builderGridNormalize(block);
+        let node=grid.querySelector('.page-block[data-id="'+block.id+'"]');
+        const renderKey=builderBlockRenderKey(block);
+        if(!node){
+          node=builderCreateBlockElement(block,grid,canvas,page);grid.appendChild(node);
+        }else if(node.dataset.renderKey!==renderKey){
+          // Content really changed. Replace this block only, never unrelated iframe widgets.
+          const fresh=builderCreateBlockElement(block,grid,canvas,page);node.replaceWith(fresh);node=fresh;
+        }
+        node.dataset.renderKey=renderKey;
+        node.classList.toggle("selected",block.id===builderSelected);
+        node.classList.toggle("builder-hidden",block.visible===false);
+        node.classList.toggle("builder-locked",!!block.locked);
+        node.style.opacity=Math.max(0,Math.min(100,Number(block.opacity??100)))/100;
+        node.style.setProperty("--builder-span",block.gridW);
+        node.style.setProperty("--grid-x",block.gridX);node.style.setProperty("--grid-y",block.gridY);
+        node.style.setProperty("--grid-w",block.gridW);node.style.setProperty("--grid-h",block.gridH);
+        if(block.height)node.style.setProperty("--builder-height",block.height+"px");else node.style.setProperty("--builder-height","auto");
+        node.style.setProperty("--builder-offset-x","0px");node.style.setProperty("--builder-offset-y","0px");
+        const readout=node.querySelector(".builder-size-readout");
+        if(readout)readout.textContent=Math.round(block.gridW/24*100)+"% × "+(block.height?block.height+"px":"auto");
+      }
+
+      // Preserve state order without recreating nodes.
+      page.blocks.forEach(block=>{const node=grid.querySelector('.page-block[data-id="'+block.id+'"]');if(node)grid.appendChild(node)});
+      const pageRows=builderEnsurePageRows(page);
+      grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";
+      builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();
+      return true;
     }
 
     function builderAppendBlockWithoutCanvasRebuild(block){
