@@ -3478,7 +3478,18 @@
       document.title=page.name+" - YANISKY Preview";
     }
 
-    function builderRender(){const tool=document.getElementById("page-builder-tool");if(tool){tool.classList.add("active");tool.style.display="block"}builderRenderPages();builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderSavedWidgets();builderEnableCanvasDrop();builderHistoryCommit()}
+    function builderRender(){
+      const tool=document.getElementById("page-builder-tool");
+      if(tool){tool.classList.add("active");tool.style.display="block"}
+      // Render independent panels defensively: a canvas/layers error must not hide saved widgets.
+      try{builderRenderPages()}catch(err){console.error("[YANISKY] pages render failed",err)}
+      try{builderRenderCanvas()}catch(err){console.error("[YANISKY] canvas render failed",err)}
+      try{builderRenderLayers()}catch(err){console.error("[YANISKY] layers render failed",err)}
+      try{builderRenderInspector()}catch(err){console.error("[YANISKY] inspector render failed",err)}
+      try{builderSavedWidgets()}catch(err){console.error("[YANISKY] saved widgets render failed",err)}
+      try{builderEnableCanvasDrop()}catch(err){console.error("[YANISKY] canvas drop setup failed",err)}
+      builderHistoryCommit()
+    }
     window?.addEventListener("message",e=>{
       const d=e.data;
       if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;
