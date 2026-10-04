@@ -2975,17 +2975,7 @@
       }
       return{x:1,y:1};
     }
-    function builderGridPlaceNear(page,incoming,anchor,side){
-      builderGridNormalize(anchor);builderGridNormalize(incoming);
-      const a=builderGridRect(anchor);
-      incoming.gridW=Math.max(2,Math.min(incoming.gridW,Math.floor(BUILDER_COLS/2)));
-      incoming.gridH=Math.max(3,incoming.gridH);
-      let x=side==="left"?a.x-incoming.gridW:a.x+a.w,y=a.y;
-      if(x<1||x+incoming.gridW-1>BUILDER_COLS||page.blocks.some(b=>b!==anchor&&b!==incoming&&builderGridCollides({...incoming,gridX:x,gridY:y},b))){
-        const pos=builderGridFindFree(page,incoming.gridW,incoming.gridH,a.y);x=pos.x;y=pos.y;
-      }
-      incoming.gridX=x;incoming.gridY=y;incoming.span=incoming.gridW;
-    }
+    
     function builderResizeNeighborPlan(page,block,dir,startRect){
       if(!(dir.includes("e")||dir.includes("w")||dir.includes("s")||dir.includes("n")))return null;
       builderGridNormalize(block);const b=builderGridRect(block),MIN=2;
@@ -3029,49 +3019,7 @@
       n.gridX=plan.p.x;n.gridY=plan.p.y;n.gridW=plan.p.w;n.gridH=plan.p.h;n.span=n.gridW;n.gridVersion=24;
       if(n.height)n.height=n.gridH*BUILDER_ROW_PX;
     }
-    function builderAutoColumnPlan(page,moving,wantX,wantY){
-      builderGridNormalize(moving);const mx=wantX+moving.gridW/2,my=wantY+moving.gridH/2;
-      const aligned=page.blocks.filter(o=>{
-        if(o.id===moving.id)return false;builderGridNormalize(o);
-        const overlap=Math.min(wantX+moving.gridW,o.gridX+o.gridW)-Math.max(wantX,o.gridX);
-        return overlap>=Math.max(1,Math.min(moving.gridW,o.gridW)*.35);
-      });
-      if(!aligned.length)return null;
-      // Anchor is the horizontally aligned block closest to the pointer vertically.
-      aligned.sort((a,b)=>Math.abs(my-(a.gridY+a.gridH/2))-Math.abs(my-(b.gridY+b.gridH/2)));
-      const anchor=aligned[0],ax=anchor.gridX,aw=anchor.gridW;
-      // A column consists only of blocks substantially sharing this x-band.
-      const col=page.blocks.filter(o=>{
-        if(o.id===moving.id)return false;builderGridNormalize(o);
-        const overlap=Math.min(ax+aw,o.gridX+o.gridW)-Math.max(ax,o.gridX);
-        return overlap>=Math.max(1,Math.min(aw,o.gridW)*.55);
-      }).sort((a,b)=>a.gridY-b.gridY);
-      if(!col.length||col.length>=6)return null;
-      // Prefer vertical intent only when pointer is close to a top/bottom edge or in a vertical gap.
-      const aTop=anchor.gridY,aBottom=anchor.gridY+anchor.gridH;
-      const verticalDistance=Math.min(Math.abs(my-aTop),Math.abs(my-aBottom));
-      const horizontalCenterDistance=Math.abs(mx-(anchor.gridX+anchor.gridW/2));
-      if(verticalDistance>Math.max(4,moving.gridH*.65)&&horizontalCenterDistance>Math.max(2,aw*.35))return null;
-
-      let insert=0;while(insert<col.length&&my>col[insert].gridY+col[insert].gridH/2)insert++;
-      const GAP=1,totalCount=col.length+1;
-      const top=Math.min(...col.map(o=>o.gridY)),bottom=Math.max(...col.map(o=>o.gridY+o.gridH));
-      const footprint=Math.max(18,bottom-top);
-      const desiredH=Math.max(3,Math.min(moving.gridH,10,Math.floor((footprint-GAP*(totalCount-1))/totalCount)));
-      // Keep the column's current x/width. New widget uses the narrower of its own width and column width.
-      const slotW=Math.max(2,Math.min(moving.gridW,aw)),slotX=Math.max(1,Math.min(BUILDER_COLS-slotW+1,Math.round(anchor.gridX+(aw-slotW)/2)));
-      let y=top;const placements=[];
-      const fitH=Math.max(3,Math.floor((footprint-GAP*(totalCount-1))/totalCount));
-      for(let i=0;i<=col.length;i++){
-        if(i===insert){placements.push({id:moving.id,x:slotX,y,w:slotW,h:desiredH,isMoving:true});y+=desiredH+GAP}
-        if(i<col.length){const o=col[i],h=Math.min(o.gridH,fitH),ratio=h/Math.max(1,o.gridH),w=Math.max(2,Math.round(o.gridW*ratio)),x=Math.max(1,Math.min(BUILDER_COLS-w+1,Math.round(ax+(aw-w)/2)));placements.push({id:o.id,x,y,w,h});y+=h+GAP}
-      }
-      // Reject if the proposed stack collides with blocks outside this column.
-      const ids=new Set(placements.map(p=>p.id));
-      const outsiders=page.blocks.filter(o=>!ids.has(o.id));
-      if(placements.some(p=>outsiders.some(o=>builderGridCollides({gridX:p.x,gridY:p.y,gridW:p.w,gridH:p.h,span:p.w,gridVersion:24},o))))return null;
-      return{kind:"column",placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
-    }
+    
     function builderValidateInsertionPlan(page,moving,plan){
       if(!plan?.placements?.length)return null;
       const plannedIds=new Set(plan.placements.map(p=>p.id));
@@ -3145,103 +3093,8 @@
       const plan={kind:"simple-dock",placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
       return builderValidateInsertionPlan(page,moving,plan);
     }
-    function builderEdgeInsertionPlan(page,moving,wantX,wantY){
-      builderGridNormalize(moving);
-      const cy=wantY+moving.gridH/2, MIN_SLOT=2;
-      // Find the closest vertically relevant block. Page edge itself acts as the other neighbor.
-      const candidates=page.blocks.filter(o=>{
-        if(o.id===moving.id)return false;builderGridNormalize(o);
-        return cy>=o.gridY-2&&cy<=o.gridY+o.gridH+2;
-      });
-      if(!candidates.length)return null;
-      let best=null;
-      for(const o of candidates){
-        const leftGap=Math.abs(wantX-1),rightGap=Math.abs((wantX+moving.gridW-1)-BUILDER_COLS);
-        const leftIntent=wantX<=o.gridX+Math.max(2,Math.ceil(o.gridW*.25));
-        const rightIntent=wantX+moving.gridW>=o.gridX+o.gridW-Math.max(2,Math.ceil(o.gridW*.25));
-        if(leftIntent){
-          const score=Math.abs((wantX+moving.gridW/2)-o.gridX)+leftGap;
-          if(!best||score<best.score)best={side:"left",o,score};
-        }
-        if(rightIntent){
-          const score=Math.abs((wantX+moving.gridW/2)-(o.gridX+o.gridW))+rightGap;
-          if(!best||score<best.score)best={side:"right",o,score};
-        }
-      }
-      if(!best)return null;
-      const o=best.o,natural=Math.max(MIN_SLOT,Math.min(moving.gridW,12));
-      let depth;
-      if(best.side==="left")depth=Math.max(0,o.gridX-(wantX+moving.gridW)+1);
-      else depth=Math.max(0,wantX-(o.gridX+o.gridW)+1);
-      let desired=Math.max(MIN_SLOT,Math.min(natural,MIN_SLOT+Math.round(Math.abs(depth))));
-      desired=Math.min(desired,Math.max(MIN_SLOT,o.gridW-2));
-      if(o.gridW-desired<2)return null;
-      const placements=[];
-      if(best.side==="left"){
-        placements.push({id:moving.id,x:1,y:o.gridY,w:desired,h:moving.gridH,isMoving:true});
-        placements.push({id:o.id,x:1+desired,y:o.gridY,w:o.gridW-desired,h:o.gridH});
-      }else{
-        const newW=o.gridW-desired;
-        placements.push({id:o.id,x:o.gridX,y:o.gridY,w:newW,h:o.gridH});
-        placements.push({id:moving.id,x:BUILDER_COLS-desired+1,y:o.gridY,w:desired,h:moving.gridH,isMoving:true});
-      }
-      return{kind:"edge",placements,moving:placements.find(p=>p.isMoving),affected:[o.id]};
-    }
-    function builderAutoRowPlan(page,moving,wantX,wantY){
-      builderGridNormalize(moving);
-      const centerY=wantY+moving.gridH/2;
-      const row=page.blocks.filter(o=>{
-        if(o.id===moving.id)return false;builderGridNormalize(o);
-        return centerY>=o.gridY-2&&centerY<=o.gridY+o.gridH+2;
-      }).sort((a,b)=>a.gridX-b.gridX);
-      if(!row.length)return null;
-
-      const rowY=Math.min(wantY,...row.map(o=>o.gridY));
-      const pointerCenter=wantX+moving.gridW/2;
-      let insert=0;
-      while(insert<row.length && pointerCenter>row[insert].gridX+row[insert].gridW/2)insert++;
-
-      // Option 3: insertion width follows how deeply the dragged widget enters the neighboring block.
-      // Start compact, then grow cell-by-cell up to the dragged widget's own width.
-      const MIN_SLOT=2, minEach=2;
-      const natural=Math.max(MIN_SLOT,Math.min(moving.gridW,12));
-      const left=insert>0?row[insert-1]:null,right=insert<row.length?row[insert]:null;
-      let depth=0;
-      if(left){
-        const overlap=Math.max(0,(left.gridX+left.gridW)-wantX);
-        depth=Math.max(depth,overlap);
-      }
-      if(right){
-        const overlap=Math.max(0,(wantX+moving.gridW)-right.gridX);
-        depth=Math.max(depth,overlap);
-      }
-      // At a page edge the cursor distance from the edge controls the slot too.
-      if(insert===0)depth=Math.max(depth,Math.max(0,moving.gridW-wantX+1));
-      if(insert===row.length)depth=Math.max(depth,Math.max(0,wantX+moving.gridW-1-BUILDER_COLS));
-
-      let desired=Math.max(MIN_SLOT,Math.min(natural,MIN_SLOT+Math.round(depth)));
-      const maxPossible=Math.max(MIN_SLOT,BUILDER_COLS-row.length*minEach);
-      desired=Math.min(desired,maxPossible);
-
-      const widths=row.map(o=>o.gridW);
-      let remain=Math.max(0,widths.reduce((a,b)=>a+b,0)+desired-BUILDER_COLS);
-      // Only nearby boundaries give way first, then more distant neighbors if absolutely needed.
-      const order=[];
-      for(let d=1;d<=row.length;d++){const l=insert-d,r=insert+d-1;if(l>=0)order.push(l);if(r<row.length)order.push(r)}
-      for(const idx of order){
-        if(remain<=0)break;
-        const take=Math.min(remain,Math.max(0,widths[idx]-minEach));
-        widths[idx]-=take;remain-=take;
-      }
-      if(remain>0)return null;
-
-      let x=1;const placements=[];
-      for(let i=0;i<=row.length;i++){
-        if(i===insert){placements.push({id:moving.id,x,y:rowY,w:desired,h:moving.gridH,isMoving:true});x+=desired}
-        if(i<row.length){placements.push({id:row[i].id,x,y:row[i].gridY,w:widths[i],h:row[i].gridH});x+=widths[i]}
-      }
-      return{placements,moving:placements.find(p=>p.isMoving),affected:placements.filter(p=>!p.isMoving).map(p=>p.id)};
-    }
+    
+    
         function builderShowRowPlan(grid,plan){
       grid.querySelectorAll(".builder-insert-preview").forEach(x=>x.remove());
       grid.querySelectorAll(".builder-preview-neighbor").forEach(x=>x.classList.remove("builder-preview-neighbor"));
@@ -3268,29 +3121,7 @@
       plan.placements.forEach(p=>{const b=page.blocks.find(o=>o.id===p.id);if(!b)return;b.gridX=p.x;b.gridY=p.y;b.gridW=p.w;b.gridH=p.h;b.span=p.w;b.gridVersion=24});
       return true;
     }
-    function builderNearestFreeForBlock(page,block,wantX,wantY){
-      builderGridNormalize(block);const maxX=BUILDER_COLS-block.gridW+1;
-      const valid=(x,y)=>{
-        if(x<1||x>maxX||y<1)return false;
-        const probe={...block,gridX:x,gridY:y};
-        return !page.blocks.some(o=>o.id!==block.id&&builderGridCollides(probe,o));
-      };
-      wantX=Math.max(1,Math.min(maxX,Math.round(wantX)));wantY=Math.max(1,Math.round(wantY));
-      if(valid(wantX,wantY))return{x:wantX,y:wantY};
-      for(let r=1;r<80;r++){
-        let best=null,bestD=Infinity;
-        for(let dy=-r;dy<=r;dy++)for(const dx of [-r,r]){
-          const x=wantX+dx,y=wantY+dy,d=Math.abs(dx)+Math.abs(dy);
-          if(d<bestD&&valid(x,y)){best={x,y};bestD=d}
-        }
-        for(let dx=-r+1;dx<=r-1;dx++)for(const dy of [-r,r]){
-          const x=wantX+dx,y=wantY+dy,d=Math.abs(dx)+Math.abs(dy);
-          if(d<bestD&&valid(x,y)){best={x,y};bestD=d}
-        }
-        if(best)return best;
-      }
-      return builderGridFindFree(page,block.gridW,block.gridH,1);
-    }
+    
     function builderDockCandidate(page,block,anchor,side){
       builderGridNormalize(block);builderGridNormalize(anchor);const a=builderGridRect(anchor),b=builderGridRect(block);
       let x=b.x,y=b.y;
@@ -3303,23 +3134,8 @@
       if(page.blocks.some(o=>o.id!==block.id&&o.id!==anchor.id&&builderGridCollides(probe,o)))return null;
       return{x,y};
     }
-    function builderNearestDock(page,block,grid){
-      const br=builderGridRect(block);let best=null,bestD=Infinity;
-      page.blocks.forEach(o=>{if(o.id===block.id)return;const a=builderGridRect(o);
-        const options=[
-          ["left",Math.abs(br.x+br.w-a.x)],
-          ["right",Math.abs(br.x-(a.x+a.w))],
-          ["top",Math.abs(br.y+br.h-a.y)],
-          ["bottom",Math.abs(br.y-(a.y+a.h))]
-        ];
-        options.forEach(([side,d])=>{if(d>2||d>=bestD)return;const p=builderDockCandidate(page,block,o,side);if(p){best={...p,anchor:o,side};bestD=d}});
-      });return best;
-    }
-    function builderShowDockPreview(grid,block,pos){
-      grid.querySelector(".builder-dock-preview")?.remove();if(!pos)return;
-      const p=document.createElement("div");p.className="builder-dock-preview";
-      p.style.gridColumn=pos.x+"/span "+block.gridW;p.style.gridRow=pos.y+"/span "+block.gridH;grid.appendChild(p);
-    }
+    
+    
     function builderGridAutoHeight(block,px){
       if(block.height)return;
       const rows=Math.max(3,Math.ceil(Number(px||90)/BUILDER_ROW_PX));
@@ -3331,26 +3147,10 @@
       if(axis==="x")g.style.left=((value-1)/BUILDER_COLS*100)+"%";else g.style.top=((value-1)*BUILDER_ROW_PX)+"px";
       grid.appendChild(g);
     }
-    function builderSnapPosition(page,block,x,y,grid){
-      builderClearGuides(grid);
-      const w=block.gridW,h=block.gridH,threshold=1;
-      let bestX=x,bestY=y,dx=99,dy=99,gx=null,gy=null;
-      page.blocks.forEach(o=>{
-        if(o.id===block.id)return;builderGridNormalize(o);
-        const xs=[o.gridX,o.gridX+o.gridW,Math.round(o.gridX+o.gridW/2)];
-        const mineX=[x,x+w,Math.round(x+w/2)];
-        xs.forEach(a=>mineX.forEach((m,i)=>{const d=Math.abs(a-m);if(d<=threshold&&d<dx){dx=d;bestX=x+(a-m);gx=a}}));
-        const ys=[o.gridY,o.gridY+o.gridH,Math.round(o.gridY+o.gridH/2)];
-        const mineY=[y,y+h,Math.round(y+h/2)];
-        ys.forEach(a=>mineY.forEach(m=>{const d=Math.abs(a-m);if(d<=threshold&&d<dy){dy=d;bestY=y+(a-m);gy=a}}));
-      });
-      bestX=Math.max(1,Math.min(BUILDER_COLS-w+1,bestX));bestY=Math.max(1,bestY);
-      if(gx!==null)builderGuide(grid,"x",gx);if(gy!==null)builderGuide(grid,"y",gy);
-      return{x:bestX,y:bestY};
-    }
-    function builderRowForBlock(page,block){return page.blocks.filter(b=>{builderGridNormalize(b);return b.gridY===block.gridY})}
-    function builderEqualizeRow(row){row.forEach(b=>builderGridNormalize(b))}
-    function builderRedistributeRow(page,block,newSpan){builderGridNormalize(block);block.gridW=Math.max(2,Math.min(BUILDER_COLS-block.gridX+1,newSpan));block.span=block.gridW}
+    
+    
+    
+    
 
     function builderAutoScrollWorkspace(clientY){
       const wrap=document.querySelector(".builder-canvas-wrap");if(!wrap)return 0;
