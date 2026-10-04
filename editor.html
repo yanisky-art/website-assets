@@ -3380,6 +3380,8 @@
 
     function builderRenderCanvas(){
       const canvas=document.getElementById("builder-canvas"); if(!canvas)return;
+      const scrollWrap=canvas.closest(".builder-canvas-wrap");
+      const keepScrollTop=scrollWrap?scrollWrap.scrollTop:0,keepScrollLeft=scrollWrap?scrollWrap.scrollLeft:0;
       const page=builderPage(); builderGridMigrate(page); builderNormalizeLayers(); canvas.innerHTML="";
       canvas.onclick=e=>{
         if(e.target.closest(".page-block")||e.target.closest(".builder-insert-zone"))return;
@@ -3551,6 +3553,12 @@
       grid.appendChild(pageResizer);
 
       grid.querySelectorAll("[data-delete]").forEach(x=>x.onclick=()=>builderDeleteBlock(x.dataset.delete));
+      // Rebuilding the canvas must not look like the page collapsed. Clearing and
+      // recreating the grid can reset the workspace scroll position to the top.
+      if(scrollWrap){
+        scrollWrap.scrollTop=keepScrollTop;scrollWrap.scrollLeft=keepScrollLeft;
+        requestAnimationFrame(()=>{scrollWrap.scrollTop=keepScrollTop;scrollWrap.scrollLeft=keepScrollLeft});
+      }
     }
 
     function builderRenderInspector(){
