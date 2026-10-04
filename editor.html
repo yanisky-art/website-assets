@@ -2774,6 +2774,7 @@
         try{const restored=recovery?JSON.parse(recovery):null;builderState=(restored&&Array.isArray(restored.pages)&&restored.pages.length)?restored:structuredClone(builderDefault)}
         catch(_){builderState=structuredClone(builderDefault)}
       }
+      builderState.pages.forEach(p=>{try{const savedRows=Number(localStorage.getItem(PAGE_BUILDER_KEY+":pageRows:"+p.id));if(Number.isFinite(savedRows)&&savedRows>0)p.pageRows=Math.max(Number(p.pageRows)||0,savedRows)}catch(e){}});
       builderState.currentPage=builderState.pages.some(p=>p.id==="home")?"home":builderState.pages[0].id;
     }
     function builderPage(){return builderState.pages.find(p=>p.id===builderState.currentPage)||builderState.pages[0]}
@@ -3529,7 +3530,17 @@
           try{pageResizer.releasePointerCapture(ev.pointerId)}catch(err){}
           window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",finish,true);window.removeEventListener("pointercancel",finish,true);
           activeResize=false;cancelAnimationFrame(autoFrame);applyResize();pageResizer.classList.remove("resizing");
-          builderHistoryCommit();builderPersist();
+          // Commit the page length as an explicit per-page value. Do not depend on
+          // builderPersist(), because its collision safety gate may reject an otherwise
+          // valid page-height-only change.
+          page.pageRows=Math.max(Math.max(21,builderPageContentRows(page)+2),Math.round(page.pageRows||startRows));
+          builderHistoryCommit();
+          try{
+            const next=JSON.stringify(builderState);
+            localStorage.setItem(PAGE_BUILDER_KEY,next);
+            localStorage.setItem(PAGE_BUILDER_KEY+":pageRows:"+page.id,String(page.pageRows));
+            builderDraftDirty=false;builderDraftStatus("Черновик сохранён","saved");
+          }catch(err){builderMarkDirty()}
         };
         window.addEventListener("pointermove",move,true);window.addEventListener("pointerup",finish,true);window.addEventListener("pointercancel",finish,true);
       };
