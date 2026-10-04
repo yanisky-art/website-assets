@@ -777,7 +777,7 @@
     .page-block[style*="--builder-height:"] .block-widget-frame{min-height:0;height:100%}
     .page-block:has(.block-widget-frame){padding:0}
     .page-block:has(.block-widget-frame)>.block-widget-frame{border-radius:8px}
-    .page-block.selected:has(.block-widget-frame)::after{content:"";position:absolute;z-index:15;inset:0;background:transparent;pointer-events:auto;cursor:grab}.page-block.dragging:has(.block-widget-frame)::after{cursor:grabbing}
+    .page-block.selected:has(.block-widget-frame)::after{content:none}.page-block.dragging:has(.block-widget-frame)::after{cursor:grabbing}
     .page-block.selected .builder-resize-handle,.page-block.selected .page-block-tools,.page-block.selected .builder-size-readout{z-index:30}
     .page-block:has(.block-widget-frame)>.builder-size-readout{right:12px;bottom:10px}
     .builder-resize-handle{position:absolute;z-index:20;display:none;touch-action:none}
@@ -823,7 +823,7 @@
     .builder-page-resizer:hover::before,.builder-page-resizer.resizing::before{width:110px;opacity:1}
 
     .page-block{grid-column:var(--grid-x,1)/span var(--grid-w,24)!important;grid-row:var(--grid-y,1)/span var(--grid-h,18)!important;height:auto!important;transform:none!important;align-self:stretch!important}
-    .page-block .block-widget-frame{height:100%!important;min-height:0!important;user-select:none}.page-block iframe.block-widget-frame{pointer-events:none}.page-block.selected iframe.block-widget-frame{pointer-events:none}
+    .page-block .block-widget-frame{height:100%!important;min-height:0!important;user-select:none}.page-block iframe.block-widget-frame{pointer-events:auto}.page-block.selected iframe.block-widget-frame{pointer-events:auto}.builder-grid.grid-interacting .page-block iframe.block-widget-frame{pointer-events:none!important}
     .builder-grid.grid-interacting{background-image:linear-gradient(to right,rgba(111,140,255,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(111,140,255,.055) 1px,transparent 1px);background-size:calc((100% + 6px)/24) 30px,100% 30px}
     .page-block.builder-collision{outline:2px solid rgba(255,120,120,.8)!important}
     .builder-row-preview{position:absolute;z-index:54;pointer-events:none;border:2px solid #8aa0ff;background:rgba(111,140,255,.07);border-radius:8px;box-sizing:border-box}
@@ -3204,7 +3204,7 @@
             window.removeEventListener("pointermove",move,true);window.removeEventListener("pointerup",up,true);window.removeEventListener("pointercancel",up,true);
             if(active){ev.preventDefault();el.dataset.justDragged="1";if(rowPlan){if(!builderApplyRowPlan(page,rowPlan)){block.gridX=start.x;block.gridY=start.y}}else{const occupied=page.blocks.some(o=>o.id!==block.id&&builderGridCollides(block,o));if(occupied){block.gridX=start.x;block.gridY=start.y}}builderClearRowPlan(grid,page);
               grid.classList.remove("grid-interacting");el.classList.remove("dragging","builder-collision");
-              grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.pointerEvents="");
+              grid.querySelectorAll(".page-block iframe").forEach(x=>x.style.removeProperty("pointer-events"));
               // Keep the existing DOM after drop. Rebuilding the canvas here reloads iframes and causes a visible flash.
               page.blocks.forEach(b=>{
                 const node=grid.querySelector('.page-block[data-id="'+b.id+'"]');if(!node)return;
@@ -3361,8 +3361,8 @@
         if(readout)readout.textContent=Math.round(block.gridW/24*100)+"% × "+(block.height?block.height+"px":"auto");
       }
 
-      // Preserve state order without recreating nodes.
-      page.blocks.forEach(block=>{const node=grid.querySelector('.page-block[data-id="'+block.id+'"]');if(node)grid.appendChild(node)});
+      // Do not reorder existing DOM nodes here. CSS Grid geometry is state-driven,
+      // while moving an attached iframe with appendChild/insertBefore can make it flash or reload.
       const pageRows=builderEnsurePageRows(page);
       grid.style.minHeight=(pageRows*BUILDER_ROW_PX)+"px";canvas.style.minHeight=(pageRows*BUILDER_ROW_PX+24)+"px";
       builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();
