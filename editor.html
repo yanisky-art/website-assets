@@ -715,12 +715,18 @@
     .builder-create-links{display:flex;flex-direction:column;gap:7px}
     .builder-create-link{appearance:none;width:100%;border:1px solid #ddd;border-radius:8px;background:transparent;color:inherit;text-align:left;padding:10px;font:inherit;font-size:13px;cursor:pointer}
     .builder-create-link:hover{background:#f5f5f5}
-    .builder-saved-widgets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-    .builder-saved-widget{min-width:0;border:1px solid #ddd;border-radius:9px;padding:7px;background:transparent;color:inherit;cursor:grab;text-align:left}
+    .builder-saved-header{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left}
+    .builder-saved-header .builder-kicker{margin:0}
+    .builder-saved-toggle{font-size:11px;opacity:.55;transition:transform .15s ease}
+    .builder-saved-section.collapsed .builder-saved-toggle{transform:rotate(-90deg)}
+    .builder-saved-section.collapsed .builder-saved-widgets{display:none}
+    .builder-saved-widgets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:9px}
+    .builder-saved-widget{position:relative;min-width:0;aspect-ratio:1/1;border:1px solid #ddd;border-radius:8px;padding:4px;background:transparent;color:inherit;cursor:grab;text-align:left}
     .builder-saved-widget:active{cursor:grabbing}
-    .builder-saved-widget img{width:100%;aspect-ratio:1/1;display:block;object-fit:cover;border-radius:6px;background:#eee}
-    .builder-saved-widget .widget-placeholder{height:70px;display:grid;place-items:center;font-size:24px}
-    .builder-saved-widget-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px;opacity:.7}
+    .builder-saved-widget img{width:100%;height:100%;display:block;object-fit:cover;border-radius:5px;background:#eee}
+    .builder-saved-widget .widget-placeholder{width:100%;height:100%;display:grid;place-items:center;font-size:20px}
+    .builder-saved-widget-name{position:absolute;left:3px;right:3px;bottom:3px;margin:0;padding:4px 5px;border-radius:4px;background:rgba(20,20,20,.88);color:#fff;font-size:9px;line-height:1.15;white-space:normal;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(2px);pointer-events:none;transition:opacity .12s ease,transform .12s ease}
+    .builder-saved-widget:hover .builder-saved-widget-name,.builder-saved-widget:focus-within .builder-saved-widget-name{opacity:1;transform:none}
     .builder-drop-ready{outline:2px dashed #6f8cff;outline-offset:-8px}
     @media(prefers-color-scheme:dark){
       .builder-create-link,.builder-saved-widget{border-color:#444}
@@ -887,8 +893,13 @@
 
           </div>
           <div class="builder-section-spacer"></div>
-          <p class="builder-kicker">Сохранённые виджеты - добавить на сайт</p>
-          <div class="builder-saved-widgets" id="builder-saved-widgets"></div>
+          <section class="builder-saved-section" id="builder-saved-section">
+            <button class="builder-saved-header" id="builder-saved-toggle" type="button" aria-expanded="true">
+              <span class="builder-kicker">Сохранённые виджеты <span id="builder-saved-count">(0)</span></span>
+              <span class="builder-saved-toggle" aria-hidden="true">▾</span>
+            </button>
+            <div class="builder-saved-widgets" id="builder-saved-widgets"></div>
+          </section>
         </aside>
 
         <section class="builder-main">
@@ -3472,6 +3483,7 @@
       host.innerHTML="";
       const widgets=getWidgets();
       const all=[{type:"price-calculator",name:"Калькулятор стоимости",url:new URL("./price-calculator/",window.location.href).toString(),system:true},...widgets];
+      const count=document.getElementById("builder-saved-count");if(count)count.textContent="("+all.length+")";
       if(!all.length){host.innerHTML='<p class="builder-note">Пока нет сохранённых виджетов.</p>';return}
       all.forEach((w,index)=>{
         const card=document.createElement("div");card.className="builder-saved-widget";card.draggable=false;
@@ -3547,6 +3559,13 @@
       builderGridMigrate(builderPage());builderGridNormalize(block);const pos=builderGridFindFree(builderPage(),block.gridW,block.gridH);block.gridX=pos.x;block.gridY=pos.y;if(atIndex===null)blocks.push(block);else blocks.splice(atIndex,0,block);
       builderSelected=block.id;if(!builderAppendBlockWithoutCanvasRebuild(block))builderRenderCanvas();builderRenderLayers();builderRenderInspector();builderEnableCanvasDrop();builderHistoryCommit();
     }
+
+    const savedToggle=document.getElementById("builder-saved-toggle");
+    if(savedToggle)savedToggle.addEventListener("click",()=>{
+      const section=document.getElementById("builder-saved-section");if(!section)return;
+      const collapsed=section.classList.toggle("collapsed");
+      savedToggle.setAttribute("aria-expanded",String(!collapsed));
+    });
 
     document.querySelectorAll("[data-widget-editor]").forEach(btn=>btn.addEventListener("click",()=>{
       const target=btn.dataset.widgetEditor;
