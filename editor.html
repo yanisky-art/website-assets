@@ -2921,7 +2921,7 @@
       if(b.type==="image")return '<div class="block-image-placeholder">'+builderEsc(b.title||"Изображение")+'</div>';
       if(b.type==="button")return '<h3 class="block-title">'+builderEsc(b.title||"Кнопка")+'</h3><span class="block-button-demo">'+builderEsc(b.text||"Открыть")+'</span>';
       if(b.type==="site-menu")return '<iframe class="block-widget-frame builder-menu-frame" src="./menu/" title="Меню сайта"></iframe>';
-      if(b.type==="gallery")return '<iframe class="block-widget-frame" src="./gallery-widget/?source='+encodeURIComponent(b.gallerySource||"all")+'&pageSize='+encodeURIComponent(b.galleryPageSize||18)+'" title="Галерея работ"></iframe>';
+      if(b.type==="gallery")return '<iframe class="block-widget-frame" src="./gallery-widget/?sourceType='+encodeURIComponent(b.gallerySourceType||"all")+'&sourceId='+encodeURIComponent(b.gallerySourceId||"")+'&sort='+encodeURIComponent(b.gallerySort||"newest")+'&pageSize='+encodeURIComponent(b.galleryPageSize||18)+'" title="Галерея работ"></iframe>';
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости" scrolling="no"></iframe>';
@@ -3464,7 +3464,7 @@
       const widthHtml='<div class="inspector-field"><label>Ширина блока</label><div class="builder-width-options">'+[[6,"25%"],[8,"33%"],[12,"50%"],[16,"66%"],[18,"75%"],[24,"100%"]].map(([s,l])=>'<button type="button" class="builder-width-btn'+(span===s?" active":"")+'" data-span="'+s+'">'+l+'</button>').join("")+'</div><p class="builder-note">Сетка теперь состоит из 24 сегментов. За края можно менять одну сторону, за уголки - ширину и высоту одновременно.</p></div><div class="inspector-field"><label>Высота блока</label><div class="builder-height-row"><input id="builder-height-input" type="number" min="48" step="1" value="'+(height||"")+'" placeholder="Авто"><button class="builder-mini" id="builder-height-auto" type="button">Авто</button></div></div>';
       let body="";
       if(block.type==="gallery"){
-        body='<p><strong>Gallery Widget</strong></p><div class="inspector-field"><label>Источник</label><select id="builder-gallery-source"><option value="all">Все опубликованные работы</option></select></div><div class="inspector-field"><label>Работ на странице</label><input id="builder-gallery-size" type="number" min="3" max="60" step="3" value="'+(block.galleryPageSize||18)+'"></div><p class="builder-note">Masonry: 3 колонки Desktop, 3 Tablet, 2 Mobile. Изображения не обрезаются. Работы со статусом «В процессе» исключаются.</p>';
+        body='<p><strong>Gallery Widget</strong></p><div class="inspector-field"><label>Источник</label><select id="builder-gallery-source-type"><option value="all">Все работы</option><option value="category">Категория</option><option value="series">Серия</option><option value="tag">Тег</option></select></div><div class="inspector-field"><label>ID источника</label><input id="builder-gallery-source-id" type="text" value="'+builderEsc(block.gallerySourceId||"")+'" placeholder="Для All оставить пустым"></div><div class="inspector-field"><label>Сортировка</label><select id="builder-gallery-sort"><option value="newest">Сначала новые</option><option value="oldest">Сначала старые</option><option value="price-asc">Цена по возрастанию</option><option value="price-desc">Цена по убыванию</option><option value="title">По названию</option></select></div><div class="inspector-field"><label>Работ на странице</label><input id="builder-gallery-size" type="number" min="3" max="60" step="3" value="'+(block.galleryPageSize||18)+'"></div><p class="builder-note">Masonry: 3 колонки Desktop, 3 Tablet, 2 Mobile. Без обрезки. «В процессе» исключаются.</p>';
       }else if(["divider","spacer","price-calculator","saved-widget","site-menu"].includes(block.type)){
         const name=block.type==="price-calculator"?"Калькулятор стоимости":block.type==="saved-widget"?(block.title||"Сохранённый виджет"):block.type==="site-menu"?"Переключение страниц":block.type==="divider"?"Разделитель":"Пустое пространство";
         body='<p><strong>'+builderEsc(name)+'</strong></p>';
@@ -3477,7 +3477,7 @@
       host.querySelectorAll("[data-device-visible]").forEach(btn=>btn.onclick=()=>{block.deviceVisibility=block.deviceVisibility||{desktop:true,tablet:true,mobile:true};const d=btn.dataset.deviceVisible;block.deviceVisibility[d]=block.deviceVisibility[d]===false?true:false;btn.classList.toggle("active",block.deviceVisibility[d]!==false)});
       const hi=document.getElementById("builder-height-input");if(hi)hi.onchange=()=>{block.height=hi.value?Math.max(48,+hi.value):null;builderRenderCanvas();builderRenderInspector()};
       const ha=document.getElementById("builder-height-auto");if(ha)ha.onclick=()=>{block.height=null;builderRenderCanvas();builderRenderInspector()};
-      const gs=document.getElementById("builder-gallery-source"),gz=document.getElementById("builder-gallery-size");if(gs){gs.value=block.gallerySource||"all";gs.onchange=()=>{block.gallerySource=gs.value;builderRenderCanvas();builderHistoryCommit()}}if(gz)gz.onchange=()=>{block.galleryPageSize=Math.max(3,Math.min(60,+gz.value||18));builderRenderCanvas();builderHistoryCommit()};
+      const gst=document.getElementById("builder-gallery-source-type"),gsi=document.getElementById("builder-gallery-source-id"),gso=document.getElementById("builder-gallery-sort"),gz=document.getElementById("builder-gallery-size");if(gst){gst.value=block.gallerySourceType||"all";gst.onchange=()=>{block.gallerySourceType=gst.value;builderRenderCanvas();builderHistoryCommit()}}if(gsi)gsi.onchange=()=>{block.gallerySourceId=gsi.value.trim();builderRenderCanvas();builderHistoryCommit()};if(gso){gso.value=block.gallerySort||"newest";gso.onchange=()=>{block.gallerySort=gso.value;builderRenderCanvas();builderHistoryCommit()}}if(gz)gz.onchange=()=>{block.galleryPageSize=Math.max(3,Math.min(60,+gz.value||18));builderRenderCanvas();builderHistoryCommit()};
       const t=document.getElementById("builder-edit-title"),x=document.getElementById("builder-edit-text");
       if(t)t.oninput=()=>{block.title=t.value;builderRenderCanvas()};
       if(x)x.oninput=()=>{block.text=x.value;builderRenderCanvas()};
@@ -3547,7 +3547,7 @@
       if(type==="text"){b.title="Новый заголовок";b.text="Добавь текст в настройках справа."}
       if(type==="image")b.title="Изображение";
       if(type==="button"){b.title="Кнопка";b.text="Открыть"}
-      if(type==="gallery"){b.title="Gallery";b.gridH=24;b.gallerySource="all";b.galleryPageSize=18;b.galleryColumns={desktop:3,tablet:3,mobile:2}}
+      if(type==="gallery"){b.title="Gallery";b.gridH=24;b.gallerySourceType="all";b.gallerySourceId="";b.gallerySort="newest";b.galleryPageSize=18;b.galleryColumns={desktop:3,tablet:3,mobile:2}}
       return b;
     }
     function builderMakeWidgetBlock(w){
