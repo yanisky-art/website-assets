@@ -2720,7 +2720,8 @@
         {id:"projects",name:"PROJECTS",blocks:[]},
         {id:"game",name:"GAME",blocks:[]},
         {id:"events",name:"EVENTS",blocks:[]},
-        {id:"contact",name:"CONTACT",blocks:[]}
+        {id:"contact",name:"CONTACT",blocks:[]},
+        {id:"artwork-page",name:"ARTWORK PAGE",pageType:"dynamic-template",templateType:"artwork",navigationVisible:false,system:true,blocks:[],folders:[],grid2DVersion:1}
       ]
     };
     let builderState;
@@ -2763,6 +2764,7 @@
         if(parsed && Array.isArray(parsed.pages) && parsed.pages.length){
           builderState=parsed;
           if(!builderState.pages.some(p=>p.id==="game")) builderState.pages.splice(Math.max(0,builderState.pages.findIndex(p=>p.id==="events")),0,{id:"game",name:"GAME",blocks:[],folders:[]});
+          if(!builderState.pages.some(p=>p.id==="artwork-page")) builderState.pages.push({id:"artwork-page",name:"ARTWORK PAGE",pageType:"dynamic-template",templateType:"artwork",navigationVisible:false,system:true,blocks:[],folders:[],grid2DVersion:1});
           // Keep an untouched recovery copy of the last valid browser draft.
           if(!localStorage.getItem(PAGE_BUILDER_KEY+":recovery")) localStorage.setItem(PAGE_BUILDER_KEY+":recovery",raw);
         }else{
@@ -2907,11 +2909,13 @@
       const host=document.getElementById("builder-pages"); if(!host)return;
       host.innerHTML="";
       builderState.pages.forEach(p=>{
-        const b=document.createElement("button"); b.type="button"; b.className="builder-page"+(p.id===builderState.currentPage?" active":""); b.textContent=p.name;
+        const b=document.createElement("button"); b.type="button"; b.className="builder-page"+(p.id===builderState.currentPage?" active":""); b.textContent=p.name+(p.pageType==="dynamic-template"?" · TEMPLATE":"");
+        if(p.pageType==="dynamic-template")b.title="Системный динамический шаблон. Не отображается в основном меню.";
         b.onclick=()=>{builderState.currentPage=p.id;builderSelected=null;builderSelectedFolder=null;builderRender()};
         host.appendChild(b);
       });
-      document.getElementById("builder-current-page").textContent=builderPage().name;
+      const activePage=builderPage();
+      document.getElementById("builder-current-page").textContent=activePage.name+(activePage.pageType==="dynamic-template"?" · TEMPLATE":"");
       const previewLink=document.getElementById("builder-preview");
       if(previewLink){const u=new URL("./preview.html",window.location.href);u.searchParams.set("page",builderPage().id);previewLink.href=u.toString()}
     }
