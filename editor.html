@@ -691,7 +691,7 @@
     .inspector-field{margin-bottom:14px}.inspector-field label{font-size:12px}.inspector-field textarea,.inspector-field select{width:100%;padding:9px;border:1px solid #ccc;border-radius:7px;background:transparent;color:inherit;font:inherit}.inspector-field textarea{min-height:100px;resize:vertical}
     .builder-note{font-size:12px;line-height:1.5;opacity:.55}.builder-danger{color:#b34a4a}
     @media(prefers-color-scheme:dark){
-      .builder-shell,.builder-toolbar,.builder-canvas{background:#191919;border-color:#444}.builder-panel{border-color:#444}.builder-main{background:#111}
+      .builder-shell,.builder-toolbar,.builder-canvas{background:#191919!important;border-color:#444}.builder-panel{border-color:#444}.builder-main{background:#111}
       .builder-page:hover,.builder-block:hover{background:#242424}.builder-page.active{background:#302a2f}.builder-block{background:#202020;border-color:#444}
       .builder-toolbar{border-color:#444}.builder-mini{border-color:#555}.builder-mini.active{background:#fff;color:#191919;border-color:#fff}
       .page-block{border-color:#333}.block-tool{background:#242424;color:#fff;border-color:#555}.block-divider{background:#444}
@@ -2955,7 +2955,7 @@
       if(b.type==="button")return '<h3 class="block-title">'+builderEsc(b.title||"Кнопка")+'</h3><span class="block-button-demo">'+builderEsc(b.text||"Открыть")+'</span>';
       if(b.type==="site-menu")return '<iframe class="block-widget-frame builder-menu-frame" src="./menu/" title="Меню сайта"></iframe>';
       if(b.type==="gallery")return '<iframe class="block-widget-frame" src="./gallery-widget/?sourceType='+encodeURIComponent(b.gallerySourceType||"all")+'&sourceId='+encodeURIComponent(b.gallerySourceId||"")+'&sort='+encodeURIComponent(b.gallerySort||"newest")+'&pinned='+encodeURIComponent((b.galleryPinnedIds||[]).join(","))+'&order='+encodeURIComponent((b.galleryManualOrder||[]).join(","))+'&quickFilters='+encodeURIComponent((b.galleryQuickFilters||[]).join(","))+'&pageSize='+encodeURIComponent(b.galleryPageSize||18)+'" title="Галерея работ"></iframe>';
-      if(b.type==="artwork-page-widget"){const slug=new URLSearchParams(location.search).get("slug")||"",bg=getComputedStyle(document.body).backgroundColor,m=bg.match(/\d+/g),theme=m&&m.length>=3&&((+m[0]*299 + +m[1]*587 + +m[2]*114)/1000)<128?"dark":((window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");return '<iframe class="block-widget-frame" src="./artwork-page-widget/?slug='+encodeURIComponent(slug)+'&theme='+theme+'" title="Страница работы" scrolling="no"></iframe>'}
+      if(b.type==="artwork-page-widget"){const slug=new URLSearchParams(location.search).get("slug")||"",theme=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";return '<iframe class="block-widget-frame" src="./artwork-page-widget/?slug='+encodeURIComponent(slug)+'&theme='+theme+'&v=4" title="Страница работы" scrolling="no"></iframe>'}
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости" scrolling="no"></iframe>';
