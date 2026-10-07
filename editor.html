@@ -2927,7 +2927,7 @@
         builderState.currentPage=next.id;
       }
       builderSelected=null;builderSelectedFolder=null;
-      builderHistoryCommit();builderRender();
+      builderHistoryCommit();builderPersist();builderRender();
     }
 
     function builderRenderPages(){
