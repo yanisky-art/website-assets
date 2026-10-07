@@ -664,6 +664,11 @@
     .builder-pages,.builder-blocks{display:flex;flex-direction:column;gap:7px}
     .builder-page,.builder-block{appearance:none;width:100%;border:1px solid transparent;border-radius:8px;background:transparent;color:inherit;text-align:left;padding:9px 10px;font:inherit;font-size:13px;cursor:pointer}
     .builder-page:hover,.builder-block:hover{background:#f5f5f5}.builder-page.active{background:#eee;font-weight:700}
+    .builder-page-row{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:4px;align-items:center}
+    .builder-page-row .builder-page{min-width:0}
+    .builder-page-delete{width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:#8d858d;cursor:pointer;font-size:17px;line-height:1}
+    .builder-page-delete:hover{background:#442b31;color:#ff9da9}
+
     .builder-block{border-color:#ddd;background:#fafafa}.builder-block small{display:block;opacity:.5;margin-top:3px}.builder-block[draggable="true"]{cursor:grab}.builder-block[draggable="true"]:active{cursor:grabbing;opacity:.7}.builder-block.drag-source{outline:2px solid #6f8cff;outline-offset:2px}
     .builder-main{min-width:0;background:#f5f5f5;display:flex;flex-direction:column}
     .builder-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #ddd;background:#fff;flex-wrap:wrap}
@@ -2909,14 +2914,37 @@
       host.ondragover=e=>{if(e.dataTransfer.types.includes("application/x-yanisky-layer"))e.preventDefault()};host.ondrop=e=>{if(e.target.closest("[data-folder-drop]"))return;const id=e.dataTransfer.getData("application/x-yanisky-layer");if(!id)return;e.preventDefault();folders.forEach(g=>g.children=(g.children||[]).filter(x=>x!==id));const from=p.blocks.findIndex(b=>b.id===id);const targetEl=e.target.closest("[data-layer-id]");const target=targetEl?p.blocks.findIndex(b=>b.id===targetEl.dataset.layerId):p.blocks.length-1;if(from>=0&&target>=0&&from!==target){const [m]=p.blocks.splice(from,1);p.blocks.splice(target,0,m)}builderRender()}
     }
 
+    function builderDeletePage(id){
+      const page=builderState.pages.find(p=>p.id===id);if(!page)return;
+      if(page.system){alert("Системную страницу удалить нельзя.");return}
+      if(builderState.pages.length<=1){alert("Нельзя удалить единственную страницу.");return}
+      const blockCount=(page.blocks||[]).length;
+      if(!confirm('Удалить страницу «'+page.name+'»?'+(blockCount?'\n\nНа странице блоков: '+blockCount:'')+'\n\nДействие можно отменить кнопкой «Отменить».'))return;
+      const index=builderState.pages.findIndex(p=>p.id===id);
+      builderState.pages.splice(index,1);
+      if(builderState.currentPage===id){
+        const next=builderState.pages[Math.min(index,builderState.pages.length-1)]||builderState.pages[0];
+        builderState.currentPage=next.id;
+      }
+      builderSelected=null;builderSelectedFolder=null;
+      builderHistoryCommit();builderRender();
+    }
+
     function builderRenderPages(){
       const host=document.getElementById("builder-pages"); if(!host)return;
       host.innerHTML="";
       builderState.pages.forEach(p=>{
+        const row=document.createElement("div");row.className="builder-page-row";
         const b=document.createElement("button"); b.type="button"; b.className="builder-page"+(p.id===builderState.currentPage?" active":""); b.textContent=p.name+(p.pageType==="dynamic-template"?" · TEMPLATE":"");
         if(p.pageType==="dynamic-template")b.title="Системный динамический шаблон. Не отображается в основном меню.";
         b.onclick=()=>{builderState.currentPage=p.id;builderSelected=null;builderSelectedFolder=null;builderRender()};
-        host.appendChild(b);
+        row.appendChild(b);
+        if(!p.system){
+          const del=document.createElement("button");del.type="button";del.className="builder-page-delete";del.textContent="×";del.title="Удалить страницу "+p.name;del.setAttribute("aria-label","Удалить страницу "+p.name);
+          del.onclick=e=>{e.stopPropagation();builderDeletePage(p.id)};
+          row.appendChild(del);
+        }
+        host.appendChild(row);
       });
       const activePage=builderPage();
       document.getElementById("builder-current-page").textContent=activePage.name+(activePage.pageType==="dynamic-template"?" · TEMPLATE":"");
