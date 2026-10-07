@@ -458,6 +458,17 @@
       ],
       "folders": [],
       "grid2DVersion": 1
+    },
+    {
+      "id": "artwork-page",
+      "name": "ARTWORK PAGE",
+      "pageType": "dynamic-template",
+      "templateType": "artwork",
+      "navigationVisible": false,
+      "system": true,
+      "blocks": [],
+      "folders": [],
+      "grid2DVersion": 1
     }
   ]
 }
