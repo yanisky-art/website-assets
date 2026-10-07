@@ -894,6 +894,7 @@
             <button class="builder-block" data-builder-add="artwork-images" type="button">Artwork Images<small>Изображения выбранной работы</small></button>
             <button class="builder-block" data-builder-add="artwork-info" type="button">Artwork Info<small>Данные выбранной работы</small></button>
             <button class="builder-block" data-builder-add="artwork-description" type="button">Artwork Description<small>Описание выбранной работы</small></button>
+            <button class="builder-block" data-builder-add="artwork-purchase" type="button">Artwork Purchase<small>Цена, статус и запрос на покупку</small></button>
 
           </div>
           <div class="builder-section-spacer"></div>
@@ -2853,8 +2854,8 @@
     }
     function builderEsc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
     function builderUid(){return "b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-    function builderLayerName(b){if(b.layerName)return b.layerName;const names={text:"Текст",image:"Изображение",button:"Кнопка","site-menu":"Меню","price-calculator":"Калькулятор стоимости",gallery:"Gallery Widget","artwork-images":"Artwork Images","artwork-info":"Artwork Info","artwork-description":"Artwork Description",divider:"Разделитель",spacer:"Пустое пространство","saved-widget":"Виджет"};return b.title||names[b.type]||"Слой"}
-    function builderLayerIcon(b){return ({text:"T",image:"▧",button:"◉","site-menu":"☰","price-calculator":"⌗",gallery:"▦","artwork-images":"▧","artwork-info":"i","artwork-description":"¶",divider:"—",spacer:"↕","saved-widget":"◇"})[b.type]||"◇"}
+    function builderLayerName(b){if(b.layerName)return b.layerName;const names={text:"Текст",image:"Изображение",button:"Кнопка","site-menu":"Меню","price-calculator":"Калькулятор стоимости",gallery:"Gallery Widget","artwork-images":"Artwork Images","artwork-info":"Artwork Info","artwork-description":"Artwork Description","artwork-purchase":"Artwork Purchase",divider:"Разделитель",spacer:"Пустое пространство","saved-widget":"Виджет"};return b.title||names[b.type]||"Слой"}
+    function builderLayerIcon(b){return ({text:"T",image:"▧",button:"◉","site-menu":"☰","price-calculator":"⌗",gallery:"▦","artwork-images":"▧","artwork-info":"i","artwork-description":"¶","artwork-purchase":"$",divider:"—",spacer:"↕","saved-widget":"◇"})[b.type]||"◇"}
     function builderNormalizeLayers(){
       const p=builderPage();p.folders=p.folders||[];
       p.blocks.forEach(b=>{if(b.visible===undefined)b.visible=true;if(b.locked===undefined)b.locked=false;if(b.opacity===undefined)b.opacity=100;if(b.deviceVisibility===undefined)b.deviceVisibility={desktop:true,tablet:true,mobile:true}});
@@ -2932,6 +2933,7 @@
       if(b.type==="artwork-images"){const slug=new URLSearchParams(location.search).get("slug")||"";return '<iframe class="block-widget-frame" src="./artwork-images-widget/?slug='+encodeURIComponent(slug)+'" title="Изображения работы" scrolling="no"></iframe>'}
       if(b.type==="artwork-info"){const slug=new URLSearchParams(location.search).get("slug")||"";return '<iframe class="block-widget-frame" src="./artwork-info-widget/?slug='+encodeURIComponent(slug)+'" title="Информация о работе" scrolling="no"></iframe>'}
       if(b.type==="artwork-description"){const slug=new URLSearchParams(location.search).get("slug")||"";return '<iframe class="block-widget-frame" src="./artwork-description-widget/?slug='+encodeURIComponent(slug)+'" title="Описание работы" scrolling="no"></iframe>'}
+      if(b.type==="artwork-purchase"){const slug=new URLSearchParams(location.search).get("slug")||"";return '<iframe class="block-widget-frame" src="./artwork-purchase-widget/?slug='+encodeURIComponent(slug)+'" title="Покупка работы" scrolling="no"></iframe>'}
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости" scrolling="no"></iframe>';
@@ -3475,8 +3477,8 @@
       let body="";
       if(block.type==="gallery"){
         body='<p><strong>Gallery Widget</strong></p><div class="inspector-field"><label>Источник</label><select id="builder-gallery-source-type"><option value="all">Все работы</option><option value="category">Категория</option><option value="series">Серия</option><option value="tag">Тег</option></select></div><div class="inspector-field" id="builder-gallery-source-wrap"><label>Выбрать источник</label><select id="builder-gallery-source-id"><option value="">Загрузка…</option></select><p class="builder-note" id="builder-gallery-source-note"></p></div><div class="inspector-field"><label>Сортировка</label><select id="builder-gallery-sort"><option value="newest">Сначала новые</option><option value="oldest">Сначала старые</option><option value="price-asc">Цена по возрастанию</option><option value="price-desc">Цена по убыванию</option><option value="title">По названию</option></select></div><div class="inspector-field"><label>Работ на странице</label><input id="builder-gallery-size" type="number" min="3" max="60" step="3" value="'+(block.galleryPageSize||18)+'"></div><div class="inspector-field"><label>Закреплённые работы</label><select id="builder-gallery-pinned" multiple size="6"></select><p class="builder-note">Выбранные работы идут первыми.</p></div><div class="inspector-field"><label>Ручной порядок</label><div id="builder-gallery-order"></div><button class="builder-mini" id="builder-gallery-order-reset" type="button">Сбросить порядок</button></div><div class="inspector-field"><label>Быстрые фильтры для посетителя</label><select id="builder-gallery-filters" multiple size="6"></select></div><p class="builder-note">Masonry: 3 колонки Desktop, 3 Tablet, 2 Mobile. Без обрезки. «В процессе» исключаются.</p>';
-      }else if(["divider","spacer","price-calculator","saved-widget","site-menu","artwork-images","artwork-info","artwork-description"].includes(block.type)){
-        const name=block.type==="artwork-description"?"Artwork Description":block.type==="artwork-info"?"Artwork Info":block.type==="artwork-images"?"Artwork Images":block.type==="price-calculator"?"Калькулятор стоимости":block.type==="saved-widget"?(block.title||"Сохранённый виджет"):block.type==="site-menu"?"Переключение страниц":block.type==="divider"?"Разделитель":"Пустое пространство";
+      }else if(["divider","spacer","price-calculator","saved-widget","site-menu","artwork-images","artwork-info","artwork-description","artwork-purchase"].includes(block.type)){
+        const name=block.type==="artwork-purchase"?"Artwork Purchase":block.type==="artwork-description"?"Artwork Description":block.type==="artwork-info"?"Artwork Info":block.type==="artwork-images"?"Artwork Images":block.type==="price-calculator"?"Калькулятор стоимости":block.type==="saved-widget"?(block.title||"Сохранённый виджет"):block.type==="site-menu"?"Переключение страниц":block.type==="divider"?"Разделитель":"Пустое пространство";
         body='<p><strong>'+builderEsc(name)+'</strong></p>';
       }else{
         body='<div class="inspector-field"><label>Заголовок</label><textarea id="builder-edit-title">'+builderEsc(block.title||"")+'</textarea></div><div class="inspector-field"><label>'+(block.type==="button"?"Текст кнопки":"Текст")+'</label><textarea id="builder-edit-text">'+builderEsc(block.text||"")+'</textarea></div>';
@@ -3589,6 +3591,7 @@
       if(type==="artwork-images"){b.title="Artwork Images";b.gridH=20}
       if(type==="artwork-info"){b.title="Artwork Info";b.gridH=13}
       if(type==="artwork-description"){b.title="Artwork Description";b.gridH=10}
+      if(type==="artwork-purchase"){b.title="Artwork Purchase";b.gridH=12}
       return b;
     }
     function builderMakeWidgetBlock(w){
