@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Artwork Description Widget</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:transparent;color:#2a2a2a;font-family:Arial,sans-serif}
+.widget{width:100%;padding:2px}
+h2{font-family:Georgia,serif;font-size:clamp(20px,2.4vw,28px);font-weight:400;line-height:1.15;margin:0 0 14px}
+.copy{font-size:14px;line-height:1.7;color:#4a4a4a;overflow-wrap:anywhere}
+.copy p{margin:0 0 1em}.copy p:last-child{margin-bottom:0}
+.copy a{color:inherit;text-decoration:underline}
+.state{min-height:150px;display:grid;place-items:center;padding:26px;text-align:center;border:1px dashed #bbb;color:#777;font-size:13px}
+@media(max-width:520px){h2{font-size:22px}.copy{font-size:14px;line-height:1.65}}
+</style>
+</head>
+<body>
+<section id="app" class="widget"><div class="state">Загрузка описания…</div></section>
+<script>
+const app=document.querySelector("#app");
+const params=new URLSearchParams(location.search),slug=params.get("slug")||"";
+const lang=(params.get("lang")||"ru").toLowerCase()==="en"?"en":"ru";
+const pick=v=>v&&typeof v==="object"&&!Array.isArray(v)?(v[lang]||v.ru||v.en||""):(v??"");
+function notifySize(){requestAnimationFrame(()=>parent.postMessage({type:"yanisky-widget-size",height:Math.ceil(document.documentElement.scrollHeight)},"*"))}
+async function run(){
+ if(!slug){app.innerHTML='<div class="state">Artwork Description<br>Открой шаблон с параметром <b>?slug=…</b>, чтобы увидеть описание конкретной работы.</div>';notifySize();return}
+ try{
+  const r=await fetch("../public-data/artworks.json",{cache:"no-store"});
+  if(!r.ok)throw new Error("artworks");
+  const artworks=await r.json(),a=artworks.find(x=>x.slug===slug||x.id===slug);
+  if(!a){app.innerHTML='<div class="state">'+(lang==="en"?"Artwork not found or not published.":"Работа не найдена или не опубликована.")+'</div>';notifySize();return}
+  const description=pick(a.description);
+  const heading=lang==="en"?"About the artwork":"О работе";
+  if(!description){app.innerHTML='<div class="state">'+(lang==="en"?"Description has not been added yet.":"Описание пока не добавлено.")+'</div>';notifySize();return}
+  app.innerHTML='<h2>'+heading+'</h2><div class="copy">'+description+'</div>';
+  notifySize();
+ }catch(e){app.innerHTML='<div class="state">'+(lang==="en"?"Could not load artwork description.":"Не удалось загрузить описание работы.")+'</div>';notifySize()}
+}
+run();window.addEventListener("resize",notifySize);
+</script>
+</body>
+</html>
