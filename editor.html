@@ -2955,7 +2955,7 @@
       if(b.type==="button")return '<h3 class="block-title">'+builderEsc(b.title||"Кнопка")+'</h3><span class="block-button-demo">'+builderEsc(b.text||"Открыть")+'</span>';
       if(b.type==="site-menu")return '<iframe class="block-widget-frame builder-menu-frame" src="./menu/" title="Меню сайта"></iframe>';
       if(b.type==="gallery")return '<iframe class="block-widget-frame" src="./gallery-widget/?sourceType='+encodeURIComponent(b.gallerySourceType||"all")+'&sourceId='+encodeURIComponent(b.gallerySourceId||"")+'&sort='+encodeURIComponent(b.gallerySort||"newest")+'&pinned='+encodeURIComponent((b.galleryPinnedIds||[]).join(","))+'&order='+encodeURIComponent((b.galleryManualOrder||[]).join(","))+'&quickFilters='+encodeURIComponent((b.galleryQuickFilters||[]).join(","))+'&pageSize='+encodeURIComponent(b.galleryPageSize||18)+'" title="Галерея работ"></iframe>';
-      if(b.type==="artwork-page-widget"){const slug=new URLSearchParams(location.search).get("slug")||"",theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";return '<iframe class="block-widget-frame" src="./artwork-page-widget/?slug='+encodeURIComponent(slug)+'&theme='+theme+'" title="Страница работы" scrolling="no"></iframe>'}
+      if(b.type==="artwork-page-widget"){const slug=new URLSearchParams(location.search).get("slug")||"",bg=getComputedStyle(document.body).backgroundColor,m=bg.match(/\d+/g),theme=m&&m.length>=3&&((+m[0]*299 + +m[1]*587 + +m[2]*114)/1000)<128?"dark":((window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");return '<iframe class="block-widget-frame" src="./artwork-page-widget/?slug='+encodeURIComponent(slug)+'&theme='+theme+'" title="Страница работы" scrolling="no"></iframe>'}
       if(b.type==="divider")return '<div class="block-divider"></div>';
       if(b.type==="spacer")return '<div class="block-spacer"></div>';
       if(b.type==="price-calculator")return '<iframe class="block-widget-frame" src="./price-calculator/" title="Калькулятор стоимости" scrolling="no"></iframe>';
@@ -3691,6 +3691,10 @@
     }
     window?.addEventListener("message",e=>{
       const d=e.data;
+      if(d&&d.type==="yanisky-widget-theme-request"){
+        const bg=getComputedStyle(document.body).backgroundColor,m=bg.match(/\d+/g),theme=m&&m.length>=3&&((+m[0]*299 + +m[1]*587 + +m[2]*114)/1000)<128?"dark":((window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");
+        e.source?.postMessage({type:"yanisky-widget-theme",theme},"*");return;
+      }
       if(!d||d.type!=="yanisky-widget-size"||!Number.isFinite(Number(d.height)))return;
       document.querySelectorAll(".block-widget-frame").forEach(frame=>{
         if(frame.contentWindow===e.source){
